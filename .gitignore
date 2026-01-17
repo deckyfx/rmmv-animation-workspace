@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+bun-debug.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Bun
+.bun/
+bun.lockb
+
+data/
+
+# RPG Maker MV RTP Assets (not included - users must download separately)
+assets/data/Animations.json
+assets/img/animations/*.png
+assets/se/*.ogg
+assets/se/*.m4a

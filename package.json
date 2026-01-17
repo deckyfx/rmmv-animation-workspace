@@ -1,0 +1,29 @@
+{
+  "name": "@decky.fx/rmmv-animation-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Monorepo for RMMV Animation Player and Studio",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "setup": "bun install && bun run build:player && bun run db:seed",
+    "dev": "bun --filter @decky.fx/rmmv-animation-studio dev",
+    "start": "bun --filter @decky.fx/rmmv-animation-studio start",
+    "healthcheck": "bun --filter @decky.fx/rmmv-animation-studio healthcheck",
+    "build": "bun run build:player && bun run build:studio",
+    "build:player": "bun --filter @decky.fx/rmmv-animation-player build",
+    "build:studio": "bun --filter @decky.fx/rmmv-animation-studio build",
+    "typecheck": "bun run typecheck:player && bun run typecheck:studio",
+    "typecheck:player": "bun --filter @decky.fx/rmmv-animation-player typecheck",
+    "typecheck:studio": "bun --filter @decky.fx/rmmv-animation-studio typecheck",
+    "test": "bun test",
+    "db:seed": "bun --filter @decky.fx/rmmv-animation-studio db:seed",
+    "clean": "rm -rf packages/*/node_modules packages/*/dist node_modules",
+    "clean:all": "rm -rf packages/*/node_modules packages/*/dist node_modules data/*"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.7.2"
+  }
+}

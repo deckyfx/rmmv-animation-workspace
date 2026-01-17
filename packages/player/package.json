@@ -1,0 +1,43 @@
+{
+  "name": "@decky.fx/rmmv-animation-player",
+  "version": "1.0.0",
+  "description": "Standalone animation player for RPG Maker MV animations in Phaser 3",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "keywords": [
+    "rmmv",
+    "rpg-maker",
+    "animation",
+    "phaser",
+    "phaser3",
+    "game-development"
+  ],
+  "author": "decky.fx",
+  "license": "MIT",
+  "peerDependencies": {
+    "phaser": "^3.60.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "phaser": "^3.87.0",
+    "typescript": "^5.7.2"
+  }
+}

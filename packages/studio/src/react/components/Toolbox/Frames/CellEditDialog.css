@@ -1,0 +1,335 @@
+.cell-edit-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-height: 600px;
+}
+
+.cell-edit-content {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 24px;
+  flex: 1;
+}
+
+/* Left: Sprite Grid */
+.cell-edit-left {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cell-sheet-selector {
+  display: flex;
+  gap: 12px;
+}
+
+.cell-sheet-btn {
+  flex: 1;
+  padding: 12px 16px;
+  border: 2px solid #3a3a3a;
+  border-radius: 6px;
+  background-color: #2a2a2a;
+  color: #aaa;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+  text-transform: uppercase;
+}
+
+.cell-sheet-btn:hover:not(:disabled) {
+  background-color: #333;
+  border-color: #4a4a4a;
+}
+
+.cell-sheet-btn.active {
+  background-color: #1e3a5f;
+  border-color: #6495ed;
+  color: white;
+}
+
+.cell-sheet-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.cell-sheet-name {
+  font-size: 11px;
+  font-weight: normal;
+  text-transform: none;
+  color: #888;
+}
+
+.cell-sheet-btn.active .cell-sheet-name {
+  color: #ddd;
+}
+
+.cell-sprite-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 64px);
+  gap: 4px;
+  max-height: 500px;
+  overflow-y: auto;
+  padding: 8px;
+  background-color: #1a1a1a;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+}
+
+.cell-sprite-grid::-webkit-scrollbar {
+  width: 8px;
+}
+
+.cell-sprite-grid::-webkit-scrollbar-track {
+  background: #1a1a1a;
+  border-radius: 4px;
+}
+
+.cell-sprite-grid::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 4px;
+}
+
+.cell-sprite-grid::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.cell-grid-item {
+  width: 64px;
+  height: 64px;
+  border: 2px solid #3a3a3a;
+  border-radius: 4px;
+  background-color: #2a2a2a;
+  cursor: pointer;
+  transition: all 0.2s;
+  overflow: hidden;
+  position: relative;
+}
+
+.cell-grid-item:hover {
+  border-color: #6495ed;
+  transform: scale(1.05);
+  z-index: 1;
+}
+
+.cell-grid-item.selected {
+  border-color: #6495ed;
+  box-shadow: 0 0 12px rgba(100, 149, 237, 0.5);
+  background-color: #1e3a5f;
+  z-index: 2;
+}
+
+.cell-grid-preview {
+  width: 100%;
+  height: 100%;
+  background-repeat: no-repeat;
+  background-size: 320px auto; /* 5 columns * 64px (scaled down from 192px) */
+  image-rendering: pixelated;
+}
+
+.cell-grid-number {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  fontSize: 9px;
+  color: #888;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 2px 4px;
+  border-radius: 2px;
+  line-height: 1;
+  pointer-events: none;
+  font-family: monospace;
+}
+
+.cell-no-sheet {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  color: #666;
+  font-size: 14px;
+  font-style: italic;
+}
+
+.cell-no-sheet i {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+/* Right: Properties and Preview */
+.cell-edit-right {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.cell-preview-section h4,
+.cell-properties h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #e0e0e0;
+  border-bottom: 1px solid #3a3a3a;
+  padding-bottom: 8px;
+}
+
+.cell-preview-box {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  background-color: #1a1a1a;
+  border: 2px solid #3a3a3a;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.cell-preview-sprite {
+  width: 192px;
+  height: 192px;
+  background-repeat: no-repeat;
+  transition: transform 0.1s;
+}
+
+.cell-properties {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cell-prop-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.cell-prop-group label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: #aaa;
+}
+
+/* Full width for opacity slider */
+.cell-prop-group.full-width {
+  grid-template-columns: 1fr;
+}
+
+.cell-prop-group select {
+  padding: 8px 10px;
+  background-color: #1a1a1a;
+  border: 1px solid #3a3a3a;
+  border-radius: 4px;
+  color: #e0e0e0;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s;
+  width: 100%;
+}
+
+.cell-prop-group select:focus {
+  border-color: #6495ed;
+}
+
+.cell-prop-group input[type='range'] {
+  width: 100%;
+  height: 6px;
+  background: #3a3a3a;
+  border-radius: 3px;
+  outline: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.cell-prop-group input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  background-color: white;
+  border: 2px solid #6495ed;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.cell-prop-group input[type='range']::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background-color: white;
+  border: 2px solid #6495ed;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.cell-opacity-value {
+  font-family: 'Courier New', monospace;
+  color: #6495ed;
+  font-weight: 600;
+}
+
+/* Footer */
+.cell-edit-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 16px;
+  border-top: 1px solid #3a3a3a;
+}
+
+.cell-edit-footer-right {
+  display: flex;
+  gap: 12px;
+}
+
+.cell-edit-footer .btn-primary,
+.cell-edit-footer .btn-secondary,
+.cell-edit-footer .btn-danger {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+  text-transform: uppercase;
+}
+
+.cell-edit-footer .btn-primary {
+  background-color: #6495ed;
+  color: white;
+}
+
+.cell-edit-footer .btn-primary:hover {
+  background-color: #5080d0;
+}
+
+.cell-edit-footer .btn-secondary {
+  background-color: #f44336;
+  color: white;
+}
+
+.cell-edit-footer .btn-secondary:hover {
+  background-color: #ff6b6b;
+}
+
+.cell-edit-footer .btn-danger {
+  background-color: #d32f2f;
+  color: white;
+}
+
+.cell-edit-footer .btn-danger:hover {
+  background-color: #f44336;
+}

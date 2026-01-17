@@ -1,0 +1,120 @@
+.file-toolbox {
+  padding: 16px;
+  background-color: #2a2a2a;
+  border-bottom: 1px solid #3a3a3a;
+}
+
+.file-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.file-btn {
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.file-btn i {
+  font-size: 16px;
+}
+
+.file-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Save Button */
+.file-btn-save {
+  background-color: #6495ed;
+  color: white;
+}
+
+.file-btn-save:hover:not(:disabled) {
+  background-color: #5080d9;
+}
+
+.file-btn-save:disabled {
+  background-color: #4a4a4a;
+  color: #888;
+}
+
+/* Export Button */
+.file-btn-export {
+  background-color: #4a4a4a;
+  color: #e0e0e0;
+  border: 1px solid #666;
+}
+
+.file-btn-export:hover:not(:disabled) {
+  background-color: #555;
+  border-color: #6495ed;
+}
+
+/* Import Button */
+.file-btn-import {
+  background-color: #4a4a4a;
+  color: #e0e0e0;
+  border: 1px solid #666;
+}
+
+.file-btn-import:hover:not(:disabled) {
+  background-color: #555;
+  border-color: #4caf50;
+}
+
+/* Delete Button */
+.file-btn-delete {
+  background-color: #4a4a4a;
+  color: #ff6b6b;
+  border: 1px solid #ff6b6b40;
+}
+
+.file-btn-delete:hover:not(:disabled) {
+  background-color: #ff6b6b;
+  color: white;
+  border-color: #ff6b6b;
+}
+
+/* Status and help text */
+.file-status {
+  font-size: 12px;
+  padding: 0 4px;
+  margin-top: -8px;
+}
+
+.file-status-dirty {
+  color: #ffa500;
+}
+
+.file-status-saved {
+  color: #4caf50;
+}
+
+.file-help {
+  font-size: 11px;
+  color: #888;
+  padding: 0 4px;
+  margin-top: -8px;
+  line-height: 1.4;
+}
+
+.file-warning {
+  font-size: 11px;
+  color: #ff9800;
+  padding: 0 4px;
+  margin-top: -8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}

@@ -1,0 +1,29 @@
+version: '3.8'
+
+name: rmmv-animation
+
+services:
+  studio:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rmmv-animation-studio
+    ports:
+      - "${OUTBOUND_PORT:-10021}:${SERVER_PORT:-3000}"
+    volumes:
+      # Persist database (monorepo structure)
+      - ./data:/app/data
+      # Mount assets for easy updates
+      - ./assets:/app/assets
+    environment:
+      - NODE_ENV=production
+      - SERVER_PORT=${SERVER_PORT:-3000}
+      # Database path for monorepo structure
+      - DB_PATH=/app/data/animations.db
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "bun", "--filter", "@decky.fx/rmmv-animation-studio", "healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

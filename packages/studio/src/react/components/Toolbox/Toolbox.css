@@ -1,0 +1,37 @@
+.toolbox {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: #2a2a2a;
+  color: #e0e0e0;
+  overflow-y: auto;
+}
+
+.toolbox-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 32px;
+  text-align: center;
+  color: #666;
+}
+
+.toolbox-empty p {
+  margin: 8px 0;
+}
+
+.toolbox-empty .hint {
+  font-size: 12px;
+  color: #555;
+}
+
+.toolbox-section {
+  border-bottom: 1px solid #3a3a3a;
+}
+
+.toolbox-section:last-child {
+  border-bottom: none;
+  flex: 1;
+}

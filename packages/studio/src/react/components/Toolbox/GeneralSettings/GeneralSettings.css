@@ -1,0 +1,46 @@
+.general-settings {
+  padding: 16px;
+}
+
+.section-title {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #999;
+}
+
+.setting-group {
+  margin-bottom: 16px;
+}
+
+.setting-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: #aaa;
+}
+
+.input,
+.select {
+  width: 100%;
+  padding: 8px 10px;
+  background-color: #333;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #e0e0e0;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.input:focus,
+.select:focus {
+  outline: none;
+  border-color: #6495ed;
+}
+
+.input:read-only,
+.select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

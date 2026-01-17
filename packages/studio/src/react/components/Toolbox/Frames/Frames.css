@@ -1,0 +1,178 @@
+.frames-toolbox {
+  padding: 16px;
+}
+
+.frames-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 400px;
+  overflow-y: auto;
+  margin-bottom: 12px;
+  padding: 4px;
+}
+
+/* Scrollbar styling */
+.frames-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.frames-list::-webkit-scrollbar-track {
+  background: #1a1a1a;
+  border-radius: 4px;
+}
+
+.frames-list::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 4px;
+}
+
+.frames-list::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Frame Item */
+.frame-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  background-color: #2a2a2a;
+  border: 2px solid #3a3a3a;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.frame-item:hover {
+  background-color: #333;
+  border-color: #4a4a4a;
+}
+
+.frame-item-active {
+  background-color: #1e3a5f;
+  border-color: #6495ed;
+}
+
+.frame-item-active:hover {
+  background-color: #2a4a7c;
+  border-color: #6495ed;
+}
+
+.frame-item-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0; /* Allow text truncation */
+}
+
+.frame-item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background-color: #3a3a3a;
+  border-radius: 4px;
+  font-size: 16px;
+  color: #888;
+  transition: all 0.2s;
+}
+
+.frame-item-active .frame-item-icon {
+  background-color: #6495ed;
+  color: white;
+}
+
+.frame-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.frame-item-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #e0e0e0;
+}
+
+.frame-item-meta {
+  font-size: 12px;
+  color: #888;
+}
+
+.frame-item-empty {
+  font-style: italic;
+  color: #666;
+}
+
+.frame-item-count {
+  color: #aaa;
+}
+
+.frame-item-active .frame-item-title {
+  color: white;
+  font-weight: 600;
+}
+
+.frame-item-active .frame-item-count {
+  color: #ddd;
+}
+
+/* Delete Button */
+.frame-item-delete {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background-color: transparent;
+  color: #888;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  opacity: 0;
+}
+
+.frame-item:hover .frame-item-delete {
+  opacity: 1;
+}
+
+.frame-item-delete:hover {
+  background-color: #f44336;
+  color: white;
+}
+
+/* Add Frame Button */
+.frames-add-btn {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 6px;
+  background-color: #4caf50;
+  color: white;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+  text-transform: uppercase;
+}
+
+.frames-add-btn:hover {
+  background-color: #45a049;
+}
+
+.frames-add-btn:active {
+  transform: scale(0.98);
+}

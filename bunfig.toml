@@ -1,0 +1,26 @@
+# Bun Configuration
+
+[test]
+# Test configuration
+# preload = []  # Empty array causes parser error
+
+[install]
+# Install configuration
+optional = true
+dev = true
+peer = true
+
+# Install cache
+cache = true
+
+[run]
+# Auto-install dependencies on run
+auto-install = true
+
+# Path aliases (matching tsconfig.json)
+[install.scopes]
+"@sdk" = "./src/sdk"
+"@phaser" = "./src/phaser"
+"@react" = "./src/react"
+"@server" = "./src/server"
+"@assets" = "./assets"
