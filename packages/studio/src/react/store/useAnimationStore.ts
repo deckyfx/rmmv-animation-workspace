@@ -161,6 +161,9 @@ export interface AnimationStoreState {
   /** Delete current animation */
   deleteCurrentAnimation: () => Promise<void>;
 
+  /** Duplicate current animation */
+  duplicateCurrentAnimation: () => Promise<void>;
+
   /* ========== Frame Editing Actions ========== */
   /** Set active frame for editing */
   setActiveFrame: (index: number | null) => void;
@@ -170,6 +173,18 @@ export interface AnimationStoreState {
 
   /** Delete a frame */
   deleteFrame: (index: number) => void;
+
+  /** Copy/duplicate a frame */
+  copyFrame: (index: number) => void;
+
+  /** Reverse frame order */
+  reverseFrames: () => void;
+
+  /** Remove all empty frames */
+  removeEmptyFrames: () => void;
+
+  /** Mirror frames - append reversed copy for IN-OUT animation */
+  mirrorFrames: () => void;
 
   /* ========== Cell Editing Actions ========== */
   /** Open cell dialog for adding new cell */
@@ -646,6 +661,48 @@ export const useAnimationStore = create<AnimationStoreState>((set, get) => ({
     }
   },
 
+  duplicateCurrentAnimation: async () => {
+    const state = get();
+    if (!state.selectedAnimation) {
+      return;
+    }
+
+    set({ isSaving: true, error: null });
+
+    try {
+      const response = await fetch(`/api/animations/${state.selectedAnimation.id}/duplicate`, {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to duplicate animation');
+      }
+
+      const { animation: duplicated } = await response.json();
+
+      // Update animations list
+      const newAnimations = [...state.animations];
+      newAnimations[duplicated.id] = duplicated;
+
+      set({
+        animations: newAnimations,
+        isSaving: false,
+      });
+
+      // Select the duplicated animation
+      get().selectAnimation(duplicated.id);
+
+      console.log('✅ Animation duplicated successfully:', duplicated.name);
+    } catch (error) {
+      set({
+        isSaving: false,
+        error: error instanceof Error ? error.message : 'Failed to duplicate animation',
+      });
+      console.error('❌ Duplicate failed:', error);
+    }
+  },
+
   /* ========== Frame Editing Actions ========== */
   setActiveFrame: (index: number | null) => {
     set({ activeFrameIndex: index });
@@ -684,6 +741,100 @@ export const useAnimationStore = create<AnimationStoreState>((set, get) => ({
       // Adjust active frame index if it was after the deleted frame
       set({ activeFrameIndex: state.activeFrameIndex - 1 });
     }
+  },
+
+  copyFrame: (index: number) => {
+    const state = get();
+    if (!state.selectedAnimation) return;
+
+    // Deep clone the frame to avoid reference issues
+    const frameToCopy = state.selectedAnimation.frames[index];
+    if (!frameToCopy) return; // Safety check
+
+    const copiedFrame = structuredClone(frameToCopy);
+
+    // Insert the copied frame right after the original
+    const newFrames = [...state.selectedAnimation.frames];
+    newFrames.splice(index + 1, 0, copiedFrame);
+
+    state.updateSelectedAnimation({
+      ...state.selectedAnimation,
+      frames: newFrames,
+    });
+    state.markDirty('frames');
+
+    // Select the newly copied frame
+    set({ activeFrameIndex: index + 1 });
+  },
+
+  reverseFrames: () => {
+    const state = get();
+    if (!state.selectedAnimation) return;
+
+    const newFrames = [...state.selectedAnimation.frames].reverse();
+
+    state.updateSelectedAnimation({
+      ...state.selectedAnimation,
+      frames: newFrames,
+    });
+    state.markDirty('frames');
+
+    // Adjust active frame index to maintain selection
+    if (state.activeFrameIndex !== null) {
+      const newIndex = newFrames.length - 1 - state.activeFrameIndex;
+      set({ activeFrameIndex: newIndex });
+    }
+  },
+
+  removeEmptyFrames: () => {
+    const state = get();
+    if (!state.selectedAnimation) return;
+
+    const newFrames = state.selectedAnimation.frames.filter(
+      (frame) => frame.length > 0
+    );
+
+    // Ensure at least one frame remains
+    if (newFrames.length === 0) {
+      alert('Cannot remove all frames. At least one frame must remain.');
+      return;
+    }
+
+    state.updateSelectedAnimation({
+      ...state.selectedAnimation,
+      frames: newFrames,
+    });
+    state.markDirty('frames');
+
+    // Deselect if active frame was removed or adjust index
+    if (state.activeFrameIndex !== null) {
+      const originalFrame = state.selectedAnimation.frames[state.activeFrameIndex];
+      if (originalFrame && originalFrame.length > 0) {
+        // Frame was kept, find its new index
+        const newIndex = newFrames.indexOf(originalFrame);
+        set({ activeFrameIndex: newIndex >= 0 ? newIndex : null });
+      } else {
+        // Frame was removed
+        set({ activeFrameIndex: null });
+      }
+    }
+  },
+
+  mirrorFrames: () => {
+    const state = get();
+    if (!state.selectedAnimation) return;
+
+    // Copy all frames and reverse, append to original
+    // Example: [1,2,3,4,5] becomes [1,2,3,4,5,5,4,3,2,1]
+    // User can delete duplicate peak frame if needed
+    const reversedFrames = structuredClone([...state.selectedAnimation.frames].reverse());
+    const newFrames = [...state.selectedAnimation.frames, ...reversedFrames];
+
+    state.updateSelectedAnimation({
+      ...state.selectedAnimation,
+      frames: newFrames,
+    });
+    state.markDirty('frames');
   },
 
   /* ========== Cell Editing Actions ========== */

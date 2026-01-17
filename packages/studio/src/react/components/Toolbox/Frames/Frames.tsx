@@ -21,6 +21,10 @@ export function Frames({ animation }: FramesProps) {
   const setActiveFrame = useAnimationStore((state) => state.setActiveFrame);
   const addFrame = useAnimationStore((state) => state.addFrame);
   const deleteFrame = useAnimationStore((state) => state.deleteFrame);
+  const copyFrame = useAnimationStore((state) => state.copyFrame);
+  const reverseFrames = useAnimationStore((state) => state.reverseFrames);
+  const removeEmptyFrames = useAnimationStore((state) => state.removeEmptyFrames);
+  const mirrorFrames = useAnimationStore((state) => state.mirrorFrames);
 
   const handleFrameClick = (index: number) => {
     // Toggle: if already active, deselect; otherwise select
@@ -44,13 +48,72 @@ export function Frames({ animation }: FramesProps) {
     }
   };
 
+  const handleCopy = (index: number, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent frame selection when clicking copy
+    copyFrame(index);
+  };
+
   const handleAddFrame = () => {
     addFrame();
+  };
+
+  const handleReverse = () => {
+    if (confirm('Reverse frame order?')) {
+      reverseFrames();
+    }
+  };
+
+  const handleRemoveEmpty = () => {
+    const emptyCount = animation.frames.filter((f) => f.length === 0).length;
+    if (emptyCount === 0) {
+      alert('No empty frames to remove');
+      return;
+    }
+    if (confirm(`Remove ${emptyCount} empty frame${emptyCount !== 1 ? 's' : ''}?`)) {
+      removeEmptyFrames();
+    }
+  };
+
+  const handleMirror = () => {
+    const resultCount = animation.frames.length * 2;
+    if (confirm(`Create mirrored IN-OUT animation?\n${animation.frames.length} frames → ${resultCount} frames`)) {
+      mirrorFrames();
+    }
   };
 
   return (
     <div className="frames-toolbox">
       <h3 className="section-title">Frames</h3>
+
+      {/* Quick Operations */}
+      <div className="frames-quick-ops">
+        <button
+          className="frames-quick-btn"
+          onClick={handleReverse}
+          title="Reverse frame order"
+        >
+          <i className="fa-solid fa-arrow-down-up-across-line"></i>
+          Reverse
+        </button>
+
+        <button
+          className="frames-quick-btn"
+          onClick={handleRemoveEmpty}
+          title="Remove all empty frames"
+        >
+          <i className="fa-solid fa-broom"></i>
+          Clean
+        </button>
+
+        <button
+          className="frames-quick-btn"
+          onClick={handleMirror}
+          title="Append reversed copy for IN-OUT animation"
+        >
+          <i className="fa-solid fa-right-left"></i>
+          Mirror
+        </button>
+      </div>
 
       <div className="frames-list">
         {animation.frames.map((frame, index) => {
@@ -82,13 +145,23 @@ export function Frames({ animation }: FramesProps) {
                 </div>
               </div>
 
-              <button
-                className="frame-item-delete"
-                onClick={(e) => handleDelete(index, e)}
-                title="Delete frame"
-              >
-                <i className="fa-solid fa-trash"></i>
-              </button>
+              <div className="frame-item-actions">
+                <button
+                  className="frame-item-copy"
+                  onClick={(e) => handleCopy(index, e)}
+                  title="Copy frame"
+                >
+                  <i className="fa-solid fa-copy"></i>
+                </button>
+
+                <button
+                  className="frame-item-delete"
+                  onClick={(e) => handleDelete(index, e)}
+                  title="Delete frame"
+                >
+                  <i className="fa-solid fa-trash"></i>
+                </button>
+              </div>
             </div>
           );
         })}

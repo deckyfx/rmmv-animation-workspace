@@ -16,6 +16,7 @@ export function File() {
     exportCurrentAnimation,
     importAnimation,
     deleteCurrentAnimation,
+    duplicateCurrentAnimation,
   } = useAnimationStore();
 
   const handleSave = async () => {
@@ -44,6 +45,10 @@ export function File() {
 
   const handleDelete = async () => {
     await deleteCurrentAnimation();
+  };
+
+  const handleDuplicate = async () => {
+    await duplicateCurrentAnimation();
   };
 
   const formatLastSaved = (date: Date | null) => {
@@ -115,6 +120,21 @@ export function File() {
 
         <div className="file-help">
           Import animation from exported JSON file
+        </div>
+
+        {/* Duplicate Button */}
+        <button
+          className="file-btn file-btn-duplicate"
+          onClick={handleDuplicate}
+          disabled={isSaving}
+          title="Create a copy of current animation"
+        >
+          <i className="fa-solid fa-copy"></i>
+          Duplicate Animation
+        </button>
+
+        <div className="file-help">
+          Create a copy with a new ID
         </div>
 
         {/* Delete Button */}

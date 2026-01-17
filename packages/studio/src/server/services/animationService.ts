@@ -249,3 +249,38 @@ export async function createAnimation(animationData: RMMVAnimation): Promise<RMM
 
   return created;
 }
+
+/**
+ * Duplicate an existing animation
+ * Creates a copy with a new ID and modified name
+ *
+ * @param id - Animation ID to duplicate
+ * @returns Created duplicate animation object
+ */
+export async function duplicateAnimation(id: number): Promise<RMMVAnimation> {
+  // Get original animation
+  const original = await getAnimationById(id);
+  if (!original) {
+    throw new Error(`Animation ${id} not found`);
+  }
+
+  // Find next available ID
+  const allAnimations = await getAllAnimations();
+  const validAnimations = allAnimations.filter((a) => a != null);
+  const maxId = validAnimations.length > 0
+    ? Math.max(...validAnimations.map((a) => a.id))
+    : 0;
+  const newId = maxId + 1;
+
+  // Create duplicate with modified name
+  const duplicateName = `${original.name} (Copy)`;
+
+  const duplicateData: RMMVAnimation = {
+    ...original,
+    id: newId,
+    name: duplicateName,
+  };
+
+  // Use createAnimation to insert the duplicate
+  return await createAnimation(duplicateData);
+}

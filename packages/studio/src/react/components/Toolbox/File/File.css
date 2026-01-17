@@ -73,6 +73,18 @@
   border-color: #4caf50;
 }
 
+/* Duplicate Button */
+.file-btn-duplicate {
+  background-color: #4a4a4a;
+  color: #e0e0e0;
+  border: 1px solid #666;
+}
+
+.file-btn-duplicate:hover:not(:disabled) {
+  background-color: #555;
+  border-color: #9c27b0;
+}
+
 /* Delete Button */
 .file-btn-delete {
   background-color: #4a4a4a;

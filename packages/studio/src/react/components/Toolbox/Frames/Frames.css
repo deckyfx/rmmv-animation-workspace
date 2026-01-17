@@ -2,6 +2,52 @@
   padding: 16px;
 }
 
+/* Quick Operations Bar */
+.frames-quick-ops {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.frames-quick-btn {
+  padding: 8px 6px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background-color: #2a2a2a;
+  color: #e0e0e0;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.frames-quick-btn i {
+  font-size: 14px;
+  color: #888;
+  transition: color 0.2s;
+}
+
+.frames-quick-btn:hover {
+  background-color: #333;
+  border-color: #6495ed;
+}
+
+.frames-quick-btn:hover i {
+  color: #6495ed;
+}
+
+.frames-quick-btn:active {
+  transform: scale(0.96);
+}
+
 .frames-list {
   display: flex;
   flex-direction: column;
@@ -123,6 +169,40 @@
   color: #ddd;
 }
 
+/* Action Buttons Container */
+.frame-item-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.frame-item:hover .frame-item-actions {
+  opacity: 1;
+}
+
+/* Copy Button */
+.frame-item-copy {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background-color: transparent;
+  color: #888;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.frame-item-copy:hover {
+  background-color: #9c27b0;
+  color: white;
+}
+
 /* Delete Button */
 .frame-item-delete {
   width: 32px;
@@ -138,11 +218,6 @@
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
-  opacity: 0;
-}
-
-.frame-item:hover .frame-item-delete {
-  opacity: 1;
 }
 
 .frame-item-delete:hover {

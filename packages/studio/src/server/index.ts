@@ -107,6 +107,32 @@ const server = serve({
       return Response.json({ error: 'Method not allowed' }, { status: 405 });
     },
 
+    // API: Duplicate animation
+    '/api/animations/:id/duplicate': async (req) => {
+      if (req.method !== 'POST') {
+        return Response.json({ error: 'Method not allowed' }, { status: 405 });
+      }
+
+      const url = new URL(req.url);
+      const pathParts = url.pathname.split('/');
+      const id = parseInt(pathParts[3] || '0', 10);
+
+      try {
+        const duplicated = await animationService.duplicateAnimation(id);
+        return Response.json({
+          success: true,
+          animation: duplicated,
+          message: `Animation duplicated with ID ${duplicated.id}`,
+        }, { status: 201 });
+      } catch (error) {
+        console.error(`Error duplicating animation ${id}:`, error);
+        return Response.json(
+          { error: 'Failed to duplicate animation', details: error instanceof Error ? error.message : 'Unknown error' },
+          { status: 500 }
+        );
+      }
+    },
+
     // API: Export single animation (future implementation)
     '/api/animations/:id/export': async (req) => {
       const url = new URL(req.url);
