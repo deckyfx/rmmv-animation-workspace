@@ -10,6 +10,10 @@
 export { AnimationPlayer } from './player/AnimationPlayer';
 export type { AnimationConfig, PlaybackOptions, TargetPosition } from './player/AnimationPlayer';
 
+// Animation player manager
+export { AnimationPlayerManager } from './player/AnimationPlayerManager';
+export type { AggregatedAssets, SpriteSheetAsset, SoundEffectAsset } from './player/AnimationPlayerManager';
+
 // Type definitions
 export type {
   RMMVAnimation,

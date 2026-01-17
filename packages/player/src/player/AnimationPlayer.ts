@@ -112,6 +112,9 @@ export class AnimationPlayer {
   private onComplete?: () => void;
   private onUpdate?: (frameIndex: number) => void;
 
+  /** Promise resolve function for async play */
+  private playResolve?: () => void;
+
   /**
    * Create animation player
    *
@@ -191,10 +194,25 @@ export class AnimationPlayer {
   /**
    * Play animation at target position
    *
+   * Returns a Promise that resolves when animation completes.
+   * For looped animations, the Promise never resolves.
+   *
    * @param target - Target position { x, y }
    * @param options - Playback options
+   * @returns Promise that resolves when animation completes (does not resolve for looped animations)
+   *
+   * @example
+   * ```typescript
+   * // Await animation completion
+   * await player.play({ x: 400, y: 300 });
+   * console.log('Animation finished!');
+   *
+   * // Chain animations
+   * await player.play({ x: 400, y: 300 });
+   * await anotherPlayer.play({ x: 500, y: 300 });
+   * ```
    */
-  play(target: TargetPosition, options: PlaybackOptions = {}): void {
+  play(target: TargetPosition, options: PlaybackOptions = {}): Promise<void> {
     if (!this.assetsLoaded) {
       throw new Error('Assets not loaded. Call preload() first.');
     }
@@ -223,10 +241,23 @@ export class AnimationPlayer {
 
     // Add update listener
     this.scene.events.on('update', this.update, this);
+
+    // Return promise that resolves when animation completes
+    return new Promise<void>((resolve) => {
+      // For looped animations, promise never resolves
+      if (this.looping) {
+        // Store resolve but never call it for looped animations
+        this.playResolve = undefined;
+      } else {
+        this.playResolve = resolve;
+      }
+    });
   }
 
   /**
    * Stop animation and cleanup
+   *
+   * If animation was started with play(), this will resolve the Promise early.
    */
   stop(): void {
     this.isPlaying = false;
@@ -244,6 +275,12 @@ export class AnimationPlayer {
     // Reset state
     this.currentFrameIndex = 0;
     this.frameAccumulator = 0;
+
+    // Resolve promise if it exists (early stop)
+    if (this.playResolve) {
+      this.playResolve();
+      this.playResolve = undefined;
+    }
   }
 
   /**
@@ -295,8 +332,16 @@ export class AnimationPlayer {
       } else {
         // Animation finished
         this.stop();
+
+        // Call onComplete callback (for backward compatibility)
         if (this.onComplete) {
           this.onComplete();
+        }
+
+        // Resolve promise
+        if (this.playResolve) {
+          this.playResolve();
+          this.playResolve = undefined;
         }
         return;
       }

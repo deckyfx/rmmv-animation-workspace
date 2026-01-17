@@ -28,15 +28,84 @@ yarn add @decky.fx/rmmv-animation-player
 
 ## Quick Start
 
-### 1. Export Animation
+### Recommended: Using AnimationPlayerManager
 
-Use RMMV Animation Studio to export your animation:
+The **AnimationPlayerManager** is the recommended approach for production games. It separates asset preloading from animation playback, preventing loading delays during gameplay.
 
-1. Open animation in the studio
-2. Click "Export Animation"
-3. Save the JSON file (e.g., `Fireball_export.json`)
+```typescript
+import Phaser from 'phaser';
+import { AnimationPlayerManager } from '@decky.fx/rmmv-animation-player';
+import type { AnimationConfig } from '@decky.fx/rmmv-animation-player';
 
-### 2. Use in Your Phaser Project
+class GameScene extends Phaser.Scene {
+  private animationManager!: AnimationPlayerManager;
+
+  constructor() {
+    super('GameScene');
+  }
+
+  async preload() {
+    // 1. Create manager
+    this.animationManager = new AnimationPlayerManager(this);
+
+    // 2. Load and register animation configs
+    const fireball: AnimationConfig = await fetch('/animations/Fireball.json').then(r => r.json());
+    const thunder: AnimationConfig = await fetch('/animations/Thunder.json').then(r => r.json());
+    const heal: AnimationConfig = await fetch('/animations/Heal.json').then(r => r.json());
+
+    this.animationManager.registerAnimations([fireball, thunder, heal]);
+
+    // 3. Get aggregated assets and preload ALL at once
+    const assets = this.animationManager.assets();
+
+    // Preload sprite sheets
+    assets.spritesheets.forEach(sheet => {
+      this.load.image(sheet.key, sheet.path);
+    });
+
+    // Preload sound effects
+    assets.soundEffects.forEach(se => {
+      this.load.audio(se.key, se.path);
+    });
+  }
+
+  async create() {
+    // 4. Play animations instantly (assets already loaded!)
+    // No loading delays during gameplay!
+
+    // Await animation completion
+    await this.animationManager.play(1, { x: 400, y: 300 });
+    console.log('Fireball finished!');
+
+    // Chain animations sequentially
+    await this.animationManager.play(2, { x: 400, y: 300 }); // Thunder
+    await this.animationManager.play(3, { x: 100, y: 100 }); // Heal
+
+    // Or play multiple in parallel
+    await Promise.all([
+      this.animationManager.play(1, { x: 100, y: 100 }),
+      this.animationManager.play(2, { x: 200, y: 200 }),
+      this.animationManager.play(3, { x: 300, y: 300 }),
+    ]);
+  }
+
+  shutdown() {
+    // Clean up on scene shutdown
+    this.animationManager.destroy();
+  }
+}
+```
+
+**Benefits:**
+- ✅ All assets preloaded in Phaser's preload phase
+- ✅ Instant playback with no loading delays
+- ✅ Automatic asset deduplication across animations
+- ✅ Play by ID - simple and intuitive
+- ✅ Automatic player lifecycle management
+
+### Alternative: Using AnimationPlayer Directly
+
+For simpler use cases or single animations, you can use `AnimationPlayer` directly:
 
 ```typescript
 import Phaser from 'phaser';
@@ -46,10 +115,6 @@ import type { AnimationConfig } from '@decky.fx/rmmv-animation-player';
 class GameScene extends Phaser.Scene {
   private player?: AnimationPlayer;
 
-  constructor() {
-    super('GameScene');
-  }
-
   async create() {
     // Load animation config
     const config: AnimationConfig = await fetch('/animations/Fireball_export.json')
@@ -58,19 +123,20 @@ class GameScene extends Phaser.Scene {
     // Create player
     this.player = new AnimationPlayer(this, config);
 
-    // Preload assets
+    // Preload assets (happens here, may cause delay)
     await this.player.preload();
 
-    // Play animation at position
-    this.player.play(
+    // Play animation at position and await completion
+    await this.player.play(
       { x: 400, y: 300 },
       {
         loop: false,
         speed: 1.0,
-        onComplete: () => console.log('Animation finished!'),
         onUpdate: (frame) => console.log(`Frame ${frame}`),
       }
     );
+
+    console.log('Animation finished!');
   }
 }
 ```
@@ -105,10 +171,10 @@ await player.preload(): Promise<void>
 
 ##### play()
 
-Play animation at target position.
+Play animation at target position. Returns a Promise that resolves when animation completes.
 
 ```typescript
-player.play(target: TargetPosition, options?: PlaybackOptions): void
+player.play(target: TargetPosition, options?: PlaybackOptions): Promise<void>
 ```
 
 **Parameters:**
@@ -116,19 +182,24 @@ player.play(target: TargetPosition, options?: PlaybackOptions): void
 - `options` - Playback options:
   - `loop?: boolean` - Loop animation continuously (default: false)
   - `speed?: number` - Playback speed multiplier (default: 1.0)
-  - `onComplete?: () => void` - Called when animation finishes (not for looped)
+  - `onComplete?: () => void` - Callback when animation finishes (optional, can use Promise instead)
   - `onUpdate?: (frameIndex: number) => void` - Called each frame
+
+**Returns:** Promise that resolves when animation completes (does not resolve for looped animations)
 
 **Example:**
 ```typescript
-player.play(
-  { x: 400, y: 300 },
-  {
-    loop: true,
-    speed: 1.5,
-    onUpdate: (frame) => console.log(`Frame ${frame}`),
-  }
-);
+// Await completion
+await player.play({ x: 400, y: 300 }, {
+  loop: false,
+  speed: 1.5,
+  onUpdate: (frame) => console.log(`Frame ${frame}`),
+});
+console.log('Animation finished!');
+
+// Chain animations
+await player.play({ x: 400, y: 300 });
+await anotherPlayer.play({ x: 500, y: 300 });
 ```
 
 ##### stop()
@@ -193,6 +264,185 @@ Destroy player and cleanup resources.
 
 ```typescript
 player.destroy(): void
+```
+
+### AnimationPlayerManager
+
+Centralized manager for multiple animations with asset preloading support. **Recommended for production games.**
+
+#### Constructor
+
+```typescript
+new AnimationPlayerManager(scene: Phaser.Scene)
+```
+
+**Parameters:**
+- `scene` - Phaser scene instance
+
+#### Methods
+
+##### registerAnimation()
+
+Register single animation config.
+
+```typescript
+manager.registerAnimation(config: AnimationConfig): void
+```
+
+**Example:**
+```typescript
+const fireball = await fetch('/animations/Fireball.json').then(r => r.json());
+manager.registerAnimation(fireball);
+```
+
+##### registerAnimations()
+
+Register multiple animation configs at once.
+
+```typescript
+manager.registerAnimations(configs: AnimationConfig[]): void
+```
+
+**Example:**
+```typescript
+const configs = await Promise.all([
+  fetch('/animations/Fireball.json').then(r => r.json()),
+  fetch('/animations/Thunder.json').then(r => r.json()),
+]);
+manager.registerAnimations(configs);
+```
+
+##### assets()
+
+Get aggregated assets from all registered animations for preloading.
+
+```typescript
+manager.assets(): AggregatedAssets
+```
+
+**Returns:**
+```typescript
+{
+  spritesheets: Array<{ key: string; path: string; hue: number }>;
+  soundEffects: Array<{ key: string; path: string }>;
+}
+```
+
+**Example:**
+```typescript
+const assets = manager.assets();
+
+// In Phaser preload
+assets.spritesheets.forEach(sheet => {
+  this.load.image(sheet.key, sheet.path);
+});
+
+assets.soundEffects.forEach(se => {
+  this.load.audio(se.key, se.path);
+});
+```
+
+##### play()
+
+Play animation by ID. Returns a Promise that resolves when animation completes.
+
+```typescript
+manager.play(
+  animationId: number,
+  position: TargetPosition,
+  options?: PlaybackOptions
+): Promise<AnimationPlayer | null>
+```
+
+**Parameters:**
+- `animationId` - Animation ID from registered config
+- `position` - Target position `{ x: number, y: number }`
+- `options` - Same as AnimationPlayer options
+
+**Returns:** Promise that resolves with AnimationPlayer instance when complete, or null if not found
+
+**Example:**
+```typescript
+// Await animation completion
+const player = await manager.play(1, { x: enemy.x, y: enemy.y });
+console.log('Animation finished!');
+
+// Chain animations sequentially
+await manager.play(1, { x: 400, y: 300 });
+await manager.play(2, { x: 400, y: 300 });
+
+// Play multiple in parallel
+await Promise.all([
+  manager.play(1, { x: 100, y: 100 }),
+  manager.play(2, { x: 200, y: 200 }),
+  manager.play(3, { x: 300, y: 300 }),
+]);
+```
+
+##### stop()
+
+Stop all instances of specific animation.
+
+```typescript
+manager.stop(animationId: number): void
+```
+
+##### stopAll()
+
+Stop all active animations.
+
+```typescript
+manager.stopAll(): void
+```
+
+##### unregisterAnimation()
+
+Unregister animation config.
+
+```typescript
+manager.unregisterAnimation(animationId: number): boolean
+```
+
+**Returns:** True if animation was registered and removed
+
+##### isRegistered()
+
+Check if animation is registered.
+
+```typescript
+manager.isRegistered(animationId: number): boolean
+```
+
+##### getRegisteredIds()
+
+Get array of registered animation IDs.
+
+```typescript
+manager.getRegisteredIds(): number[]
+```
+
+##### getActiveCount()
+
+Get active player count for specific animation.
+
+```typescript
+manager.getActiveCount(animationId: number): number
+```
+
+##### getTotalActiveCount()
+
+Get total active player count across all animations.
+
+```typescript
+manager.getTotalActiveCount(): number
+```
+
+##### destroy()
+
+Destroy manager and cleanup all resources.
+
+```typescript
+manager.destroy(): void
 ```
 
 ## Advanced Usage
