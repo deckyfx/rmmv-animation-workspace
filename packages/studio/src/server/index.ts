@@ -8,7 +8,8 @@ import { serve } from 'bun';
 import index from '../index.html';
 import { initDatabase } from '@db/client';
 import * as animationService from './services/animationService';
-import type { RMMVAnimation } from '@decky.fx/rmmv-animation-player';
+import type { RMMVAnimation } from '@decky.fx/rmmv-animation-player/types';
+import { RMMV_CELL_SIZE } from '@decky.fx/rmmv-animation-player/types';
 
 const PORT = process.env.SERVER_PORT ? parseInt(process.env.SERVER_PORT) : 3000;
 
@@ -237,14 +238,48 @@ const server = serve({
         const spritesheetsPath = '../../assets/img/animations';
         const files = readdirSync(spritesheetsPath);
 
-        // Filter for image files only
-        const spriteSheets = files
+        // Filter for image files and get dimensions
+        const spriteSheetPromises = files
           .filter((file) => /\.(png|jpg|jpeg)$/i.test(file))
-          .map((file) => ({
-            filename: file.replace(/\.(png|jpg|jpeg)$/i, ''), // Remove extension
-            path: `/assets/img/animations/${file}`,
-          }));
+          .map(async (file) => {
+            const filename = file.replace(/\.(png|jpg|jpeg)$/i, '');
+            const filePath = `${spritesheetsPath}/${file}`;
 
+            try {
+              // Load image to get dimensions
+              const imageFile = Bun.file(filePath);
+              const arrayBuffer = await imageFile.arrayBuffer();
+
+              // For PNG files, read dimensions from header
+              const buffer = Buffer.from(arrayBuffer);
+              let width = 0;
+
+              // PNG signature check and dimension extraction
+              if (buffer[0] === 0x89 && buffer[1] === 0x50) { // PNG
+                width = buffer.readUInt32BE(16); // Width is at offset 16
+              }
+
+              // Calculate columns (each cell is RMMV_CELL_SIZE px wide)
+              const columns = width > 0 ? Math.floor(width / RMMV_CELL_SIZE) : 5; // Default to 5 if can't detect
+
+              return {
+                filename,
+                path: `/assets/img/animations/${file}`,
+                columns, // Number of columns in sprite sheet
+                cellSize: RMMV_CELL_SIZE, // Size of each cell
+              };
+            } catch (err) {
+              // Fallback to default if image loading fails
+              return {
+                filename,
+                path: `/assets/img/animations/${file}`,
+                columns: 5, // Default to 5 columns
+                cellSize: RMMV_CELL_SIZE,
+              };
+            }
+          });
+
+        const spriteSheets = await Promise.all(spriteSheetPromises);
         return Response.json({ spriteSheets });
       } catch (error) {
         console.error('Error listing sprite sheets:', error);
@@ -315,7 +350,7 @@ const server = serve({
     // Serve studio public assets (CSS, fonts, etc.)
     '/css/*': async (req) => {
       const url = new URL(req.url);
-      const filePath = `../public${url.pathname}`; // e.g., ../public/css/fontawesome.min.css
+      const filePath = `./public${url.pathname}`; // e.g., ./public/css/fontawesome.min.css
       const file = Bun.file(filePath);
 
       if (await file.exists()) {
@@ -326,7 +361,7 @@ const server = serve({
 
     '/webfonts/*': async (req) => {
       const url = new URL(req.url);
-      const filePath = `../public${url.pathname}`; // e.g., ../public/webfonts/fa-solid-900.woff2
+      const filePath = `./public${url.pathname}`; // e.g., ./public/webfonts/fa-solid-900.woff2
       const file = Bun.file(filePath);
 
       if (await file.exists()) {

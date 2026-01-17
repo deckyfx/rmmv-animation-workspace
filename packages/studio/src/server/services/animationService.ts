@@ -8,7 +8,7 @@
 import { eq, asc } from 'drizzle-orm';
 import { getDatabase } from '@db/client';
 import { animations, animationFrames, animationTimings } from '@db/schema';
-import type { RMMVAnimation, RMMVFrame, RMMVAnimationTiming } from '@decky.fx/rmmv-animation-player';
+import type { RMMVAnimation, RMMVFrame, RMMVAnimationTiming } from '@decky.fx/rmmv-animation-player/types';
 
 /**
  * Get all animations (metadata with frame count)

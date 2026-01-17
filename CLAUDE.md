@@ -53,21 +53,31 @@ cellId 6 = row 1, col 1 → x: 192px, y: 192px
 ```
 
 **Key Facts**:
-- Cell size: Always 192×192 pixels
+- Cell size: Always 192×192 pixels (use `RMMV_CELL_SIZE` constant)
 - Column count: Varies per sprite sheet (3-5 columns typically)
 - Row count: Variable (depends on sprite sheet content)
 - Real RMMV data shows cellIds up to 112+ for larger sheets
 - Use `getCellCoordinates(cellId, columns)` utility to calculate slice position
 
+**Cell Size Constant**:
+```typescript
+import { RMMV_CELL_SIZE } from '@decky.fx/rmmv-animation-player';
+
+// Use this constant instead of hard-coding 192
+const columns = imageWidth / RMMV_CELL_SIZE;
+const x = col * RMMV_CELL_SIZE;
+const y = row * RMMV_CELL_SIZE;
+```
+
 **Calculating Cell Position**:
 ```typescript
-import { getCellCoordinates } from '@decky.fx/rmmv-animation-player';
+import { getCellCoordinates, RMMV_CELL_SIZE } from '@decky.fx/rmmv-animation-player';
 
 // For a 5-column sprite sheet
 const coords = getCellCoordinates(cellId, 5);
 // Returns: { row, col, x, y }
 
-// Renderer slices sprite sheet at (x, y) with size 192×192
+// Renderer slices sprite sheet at (x, y) with size RMMV_CELL_SIZE × RMMV_CELL_SIZE
 ```
 
 ### Validation Rules (Verified Against Real Data)

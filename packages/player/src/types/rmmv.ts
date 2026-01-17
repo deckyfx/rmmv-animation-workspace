@@ -293,21 +293,32 @@ export interface RMMVAnimation {
 export type RMMVAnimationsData = (RMMVAnimation | null)[];
 
 /**
+ * Standard RMMV cell size (192×192 pixels)
+ * This is the fixed size for all sprite sheet cells in RPG Maker MV
+ *
+ * Use this constant anywhere cell dimensions are needed:
+ * - Calculating sprite sheet columns: width / RMMV_CELL_SIZE
+ * - Slicing sprite sheets: x = col * RMMV_CELL_SIZE
+ * - Background positioning and rendering
+ */
+export const RMMV_CELL_SIZE = 192;
+
+/**
  * Sprite sheet cell configuration
  *
  * RMMV sprite sheets vary in size:
  * - Standard: 5×5 grid (25 cells)
  * - Variable: 3-5 columns, variable rows
- * - Cell size: Always 192×192 pixels
+ * - Cell size: Always 192×192 pixels (RMMV_CELL_SIZE)
  */
 export interface RMMVSpriteSheetConfig {
   /** Number of columns in sprite sheet grid (typically 3-5) */
   columns: number;
   /** Number of rows in sprite sheet grid (variable) */
   rows: number;
-  /** Width of each cell in pixels (always 192) */
+  /** Width of each cell in pixels (always RMMV_CELL_SIZE = 192) */
   cellWidth: number;
-  /** Height of each cell in pixels (always 192) */
+  /** Height of each cell in pixels (always RMMV_CELL_SIZE = 192) */
   cellHeight: number;
 }
 
@@ -319,8 +330,8 @@ export interface RMMVSpriteSheetConfig {
 export const RMMV_SPRITE_SHEET_CONFIG: RMMVSpriteSheetConfig = {
   columns: 5,
   rows: 5,
-  cellWidth: 192,
-  cellHeight: 192,
+  cellWidth: RMMV_CELL_SIZE,
+  cellHeight: RMMV_CELL_SIZE,
 };
 
 /**
@@ -350,15 +361,15 @@ export interface CellCoordinates {
  *
  * @param cellId - Cell ID from animation data (0-indexed)
  * @param columns - Number of columns in sprite sheet
- * @param cellWidth - Width of each cell in pixels (default: 192)
- * @param cellHeight - Height of each cell in pixels (default: 192)
+ * @param cellWidth - Width of each cell in pixels (default: RMMV_CELL_SIZE = 192)
+ * @param cellHeight - Height of each cell in pixels (default: RMMV_CELL_SIZE = 192)
  * @returns Cell coordinates with row, col, x, y
  */
 export function getCellCoordinates(
   cellId: number,
   columns: number,
-  cellWidth = 192,
-  cellHeight = 192
+  cellWidth = RMMV_CELL_SIZE,
+  cellHeight = RMMV_CELL_SIZE
 ): CellCoordinates {
   const row = Math.floor(cellId / columns);
   const col = cellId % columns;

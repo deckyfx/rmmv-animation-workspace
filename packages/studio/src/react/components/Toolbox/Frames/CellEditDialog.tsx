@@ -12,7 +12,8 @@ import { useState, useEffect } from 'react';
 import { Dialog } from '@react/components/common/Dialog/Dialog';
 import { NumberInput } from '@react/components/common/NumberInput/NumberInput';
 import { useAnimationStore } from '@react/store/useAnimationStore';
-import type { RMMVCellData, RMMVAnimation } from '@decky.fx/rmmv-animation-player';
+import type { RMMVCellData, RMMVAnimation } from '@decky.fx/rmmv-animation-player/types';
+import { RMMV_CELL_SIZE } from '@decky.fx/rmmv-animation-player/types';
 import './CellEditDialog.css';
 
 interface CellEditDialogProps {
@@ -44,6 +45,25 @@ export function CellEditDialog({ animation }: CellEditDialogProps) {
 
   // Selected sprite sheet (1 or 2)
   const [selectedSheet, setSelectedSheet] = useState<1 | 2>(1);
+
+  // Sprite sheet metadata (columns per sheet)
+  const [sheetMetadata, setSheetMetadata] = useState<Record<string, { columns: number; cellSize: number }>>({});
+
+  // Fetch sprite sheet metadata when dialog opens
+  useEffect(() => {
+    if (cellDialog.isOpen) {
+      fetch('/api/spritesheets')
+        .then((res) => res.json())
+        .then((data) => {
+          const metadata: Record<string, { columns: number; cellSize: number }> = {};
+          data.spriteSheets?.forEach((sheet: { filename: string; columns: number; cellSize: number }) => {
+            metadata[sheet.filename] = { columns: sheet.columns, cellSize: sheet.cellSize };
+          });
+          setSheetMetadata(metadata);
+        })
+        .catch((err) => console.error('Failed to load sprite sheet metadata:', err));
+    }
+  }, [cellDialog.isOpen]);
 
   // Initialize state from cellDialog
   useEffect(() => {
@@ -114,12 +134,13 @@ export function CellEditDialog({ animation }: CellEditDialogProps) {
     ? `/assets/img/animations/${currentSheetName}.png`
     : '';
 
-  // Calculate normalized cell ID (0-99) for preview
+  // Get current sheet metadata
+  const currentColumns = currentSheetName ? (sheetMetadata[currentSheetName]?.columns || 5) : 5;
+
+  // Calculate normalized cell ID (0-99 for sheet 1, 100-199 for sheet 2) for preview
   const normalizedCellId = cellId % 100;
-  const COLUMNS = 5;
-  const CELL_SIZE = 192;
-  const col = normalizedCellId % COLUMNS;
-  const row = Math.floor(normalizedCellId / COLUMNS);
+  const col = normalizedCellId % currentColumns;
+  const row = Math.floor(normalizedCellId / currentColumns);
 
   if (!cellDialog.isOpen) return null;
 
@@ -157,29 +178,31 @@ export function CellEditDialog({ animation }: CellEditDialogProps) {
 
             {currentSheetName ? (
               <div className="cell-sprite-grid">
-                {/* Show first 25 cells (5x5 grid) */}
-                {Array.from({ length: 25 }, (_, i) => {
+                {/* Show first 25 cells (5 rows × currentColumns) */}
+                {Array.from({ length: currentColumns * 5 }, (_, i) => {
                   const actualCellId = selectedSheet === 1 ? i : i + 100;
                   const isSelected = cellId === actualCellId;
-                  const col = i % COLUMNS;
-                  const row = Math.floor(i / COLUMNS);
+                  const gridCol = i % currentColumns;
+                  const gridRow = Math.floor(i / currentColumns);
 
                   // Scale down from 192px cells to 64px display
-                  const bgX = col * 64;
-                  const bgY = row * 64;
+                  const displaySize = 64;
+                  const bgX = gridCol * displaySize;
+                  const bgY = gridRow * displaySize;
 
                   return (
                     <div
                       key={i}
                       className={`cell-grid-item ${isSelected ? 'selected' : ''}`}
                       onClick={() => handleCellSelect(actualCellId)}
-                      title={`Cell ${actualCellId} (col:${col}, row:${row})`}
+                      title={`Cell ${actualCellId} (col:${gridCol}, row:${gridRow})`}
                     >
                       <div
                         className="cell-grid-preview"
                         style={{
                           backgroundImage: `url(${currentSheetPath})`,
                           backgroundPosition: `-${bgX}px -${bgY}px`,
+                          backgroundSize: `${currentColumns * displaySize}px auto`,
                         }}
                       />
                       <div className="cell-grid-number">
@@ -213,8 +236,8 @@ export function CellEditDialog({ animation }: CellEditDialogProps) {
                     className="cell-preview-sprite"
                     style={{
                       backgroundImage: `url(${currentSheetPath})`,
-                      backgroundPosition: `-${col * CELL_SIZE}px -${row * CELL_SIZE}px`,
-                      backgroundSize: `${COLUMNS * CELL_SIZE}px auto`,
+                      backgroundPosition: `-${col * RMMV_CELL_SIZE}px -${row * RMMV_CELL_SIZE}px`,
+                      backgroundSize: `${currentColumns * RMMV_CELL_SIZE}px auto`,
                       transform: `scale(${scale / 100}) rotate(${rotation}deg) scaleX(${flip ? -1 : 1})`,
                       mixBlendMode: ['normal', 'screen', 'multiply', 'screen'][blendMode] as any,
                     }}

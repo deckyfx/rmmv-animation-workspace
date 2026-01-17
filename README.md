@@ -2,6 +2,23 @@
 
 A monorepo containing tools for RPG Maker MV animations: a standalone animation player and a web-based animation studio.
 
+# Screenshoots
+
+**Main Dashboard**
+![Dashboard](screenshoots/dashboard.png)
+
+**Sprite Sheet Configuration**
+![Sprite Sheet Setup](screenshoots/setup-spritesheets.png)
+
+**Sprite Cell Editor**
+![Sprite Settings](screenshoots/sprite-settings.png)
+
+**Sound Effects Setup**
+![Sound Effects](screenshoots/setup-se.png)
+
+**Timing and Flash Effects**
+![Timing Effects](screenshoots/setup-timing-effects.png)
+
 ## Packages
 
 ### [@decky.fx/rmmv-animation-player](packages/player/)
@@ -237,15 +254,6 @@ Animation assets are:
 - Licensed under RPG Maker MV's terms of use
 - You must own a valid RPG Maker MV license to use these assets
 
-## Tech Stack
-
-- **Runtime**: Bun
-- **Frontend**: React + TypeScript
-- **State Management**: Zustand
-- **Database**: SQLite with Drizzle ORM
-- **Game Engine**: Phaser 3
-- **Architecture**: Class-based OOP with TSDoc
-- **Monorepo**: Bun Workspaces
 
 ## Workspace Commands
 
@@ -299,27 +307,8 @@ bun run db:seed        # Seed database
 - [Player README](packages/player/README.md) - Animation player documentation
 - [DOCKER.md](DOCKER.md) - Docker deployment guide
 
-## Publishing
-
-The player package is designed to be published to npm:
-
-```bash
-cd packages/player
-npm publish --access public
-```
-
 The studio package is private and not intended for publication.
 
 ## License
 
 MIT License - see [LICENSE](LICENSE) file for details.
-
-### Third-Party Assets
-
-Animation assets (sprite sheets, sound effects, and animation data) in the `assets/` directory are from **RPG Maker MV's Run Time Package (RTP)**:
-
-- Copyright © 2015 KADOKAWA CORPORATION / YOJI OJIMA
-- Used in accordance with RPG Maker MV's license terms
-- Included for demonstration and development purposes
-
-Users should ensure compliance with RPG Maker MV's licensing terms when using these assets in their projects.
