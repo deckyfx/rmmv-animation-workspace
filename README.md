@@ -27,7 +27,8 @@ Standalone animation player for Phaser 3 projects.
 
 - 📦 **NPM Package**: Install and use in any Phaser project
 - 🎯 **Framework-Agnostic**: Works with any Phaser setup
-- 🔊 **Full Feature Support**: Cells, timings, sound effects, blend modes
+- 🔊 **Full Feature Support**: Cells, timings, sound effects, blend modes, flash effects
+- ✨ **Flash Effects**: Target tinting, screen flash, and hide target effects
 - 📘 **TypeScript**: Complete type definitions and documentation
 
 See [packages/player/README.md](packages/player/README.md) for detailed documentation.
@@ -180,7 +181,7 @@ Quick example:
 ```typescript
 import Phaser from 'phaser';
 import { AnimationPlayer } from '@decky.fx/rmmv-animation-player';
-import type { AnimationConfig } from '@decky.fx/rmmv-animation-player';
+import type { AnimationConfig, AnimationTarget } from '@decky.fx/rmmv-animation-player';
 
 class GameScene extends Phaser.Scene {
   async create() {
@@ -194,8 +195,11 @@ class GameScene extends Phaser.Scene {
     // Preload assets
     await player.preload();
 
-    // Play at position
-    player.play({ x: 400, y: 300 }, {
+    // Create a target (any object with AnimationTarget interface)
+    const enemy = this.add.sprite(400, 300, 'enemy');
+
+    // Play animation on target (supports flash effects: tinting, screen flash, hide target)
+    await player.play(enemy, {
       loop: false,
       speed: 1.0,
       onComplete: () => console.log('Animation finished!'),

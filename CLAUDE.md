@@ -33,6 +33,39 @@ The `Animations.json` file from RPG Maker MV contains animation definitions with
 
 Animation sprites are located in `assets/img/animations/` as PNG files.
 
+### Flash Effects (Timing Events)
+
+Flash effects are triggered via timing events and support three scopes:
+
+- **flashScope: 0** - NONE (no flash effect)
+- **flashScope: 1** - TARGET (tint the animation target)
+- **flashScope: 2** - SCREEN (flash entire screen using camera)
+- **flashScope: 3** - HIDE_TARGET (tint and hide target, then restore)
+
+**Flash Duration**: Specified in **animation frames** (not RMMV ticks or milliseconds)
+- Duration of 5 = target stays tinted/hidden for 5 animation frames
+- Flash effects are frame-based and persist across multiple rendered frames
+- Effects are cleared when currentFrame >= (startFrame + flashDuration)
+
+**Flash Color**: `[R, G, B, Intensity]` where each value is 0-255
+- RGB values determine tint color (e.g., [255, 0, 0, 255] = red)
+- Intensity used for screen flash brightness
+
+**AnimationTarget Interface**: Any object can be a flash target if it implements:
+```typescript
+interface AnimationTarget {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  setTint(color: number): void;    // Apply tint in 0xRRGGBB format
+  clearTint(): void;                 // Remove tint
+  setVisible(visible: boolean): void; // Show/hide target
+}
+```
+
+Phaser.GameObjects.GameObject naturally implements this interface.
+
 ### Cell Indexing (Critical for Renderer)
 
 **IMPORTANT**: cellId uses **row-major indexing**:

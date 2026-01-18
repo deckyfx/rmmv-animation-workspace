@@ -171,14 +171,16 @@ await player.preload(): Promise<void>
 
 ##### play()
 
-Play animation at target position. Returns a Promise that resolves when animation completes.
+Play animation at target position or on an animation target. Returns a Promise that resolves when animation completes.
 
 ```typescript
-player.play(target: TargetPosition, options?: PlaybackOptions): Promise<void>
+player.play(target: AnimationTarget | TargetPosition, options?: PlaybackOptions): Promise<void>
 ```
 
 **Parameters:**
-- `target` - Position to play animation at `{ x: number, y: number }`
+- `target` - Animation target object or position:
+  - `AnimationTarget` - Any object implementing the AnimationTarget interface (supports flash effects)
+  - `TargetPosition` - Simple position object `{ x: number, y: number }`
 - `options` - Playback options:
   - `loop?: boolean` - Loop animation continuously (default: false)
   - `speed?: number` - Playback speed multiplier (default: 1.0)
@@ -187,19 +189,26 @@ player.play(target: TargetPosition, options?: PlaybackOptions): Promise<void>
 
 **Returns:** Promise that resolves when animation completes (does not resolve for looped animations)
 
-**Example:**
+**Examples:**
+
 ```typescript
-// Await completion
+// Play at position (no flash effects)
 await player.play({ x: 400, y: 300 }, {
   loop: false,
   speed: 1.5,
   onUpdate: (frame) => console.log(`Frame ${frame}`),
 });
-console.log('Animation finished!');
 
-// Chain animations
-await player.play({ x: 400, y: 300 });
-await anotherPlayer.play({ x: 500, y: 300 });
+// Play on target sprite (supports flash effects)
+const enemy = this.add.sprite(400, 300, 'enemy');
+await player.play(enemy, {
+  loop: false,
+  onComplete: () => console.log('Hit!'),
+});
+
+// Chain animations on same target
+await player.play(enemy);
+await anotherPlayer.play(enemy);
 ```
 
 ##### stop()
@@ -446,6 +455,81 @@ manager.destroy(): void
 ```
 
 ## Advanced Usage
+
+### Flash Effects
+
+RMMV animations support flash effects for visual impact during battle animations. The player supports three types of flash effects:
+
+#### Flash Scopes
+
+- **TARGET (flashScope: 1)** - Tint the animation target with a color
+- **SCREEN (flashScope: 2)** - Flash the entire screen
+- **HIDE_TARGET (flashScope: 3)** - Tint and hide the target, then restore
+
+#### AnimationTarget Interface
+
+To use TARGET and HIDE_TARGET flash effects, pass an object implementing the `AnimationTarget` interface to `play()`:
+
+```typescript
+interface AnimationTarget {
+  x: number;                        // X position
+  y: number;                        // Y position
+  width: number;                    // Width (for positioning)
+  height: number;                   // Height (for positioning)
+  setTint(color: number): void;     // Apply tint (0xRRGGBB format)
+  clearTint(): void;                // Remove tint
+  setVisible(visible: boolean): void; // Show/hide target
+}
+```
+
+Phaser.GameObjects.GameObject (sprites, containers, etc.) naturally implements this interface:
+
+```typescript
+// Flash effects work automatically with Phaser sprites
+const enemy = this.add.sprite(400, 300, 'enemy');
+
+// Animation will apply flash effects (tinting, hiding) to the sprite
+await player.play(enemy);
+```
+
+#### Custom Animation Targets
+
+You can create custom objects that implement the interface:
+
+```typescript
+class CustomTarget implements AnimationTarget {
+  x = 400;
+  y = 300;
+  width = 64;
+  height = 64;
+
+  setTint(color: number): void {
+    console.log('Tinted with color:', color.toString(16));
+    // Apply tint to your custom rendering
+  }
+
+  clearTint(): void {
+    console.log('Tint cleared');
+    // Remove tint from your custom rendering
+  }
+
+  setVisible(visible: boolean): void {
+    console.log('Visibility:', visible);
+    // Show/hide your custom object
+  }
+}
+
+const target = new CustomTarget();
+await player.play(target);
+```
+
+#### Flash Effect Timing
+
+Flash effects are configured in animation timing events:
+- **flashDuration**: Duration in animation frames (not milliseconds)
+- **flashColor**: `[R, G, B, Intensity]` where each value is 0-255
+
+Example: A flash with duration 5 will tint the target for 5 animation frames, then automatically clear.
 
 ### Multiple Animations
 

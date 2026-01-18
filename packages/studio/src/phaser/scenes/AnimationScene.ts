@@ -472,8 +472,8 @@ export class AnimationScene extends Phaser.Scene {
       case RMMVFlashScope.SCREEN:
         console.log('[Flash] SCREEN flash - using camera');
         // Flash entire screen using camera
-        // Convert frame duration to milliseconds for camera flash
-        const durationMs = (flashDuration / 4) * (1000 / 15);
+        // Convert animation frames to milliseconds (15 FPS = 66.67ms per frame)
+        const durationMs = flashDuration * (1000 / 15);
         const intensity = (flashColor[3] || 255) / 255;
         console.log('[Flash] Intensity:', intensity, 'Duration (ms):', durationMs);
         this.cameras.main.flash(durationMs, r, g, b, false, undefined, intensity);
