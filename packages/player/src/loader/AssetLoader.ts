@@ -83,12 +83,10 @@ export class AssetLoader {
     // Check cache first
     if (this.cache.has(key)) {
       const cached = this.cache.get(key)!;
-      console.log(`Using cached asset: ${filename}`);
       return cached;
     }
 
     // Load from server
-    console.log(`Loading asset: ${filename}`);
     const url = `/assets/img/animations/${filename}.png`;
 
     const response = await fetch(url);
@@ -123,7 +121,6 @@ export class AssetLoader {
     };
 
     this.cache.set(key, asset);
-    console.log(`Loaded and cached asset: ${filename}`);
 
     return asset;
   }
@@ -141,7 +138,6 @@ export class AssetLoader {
    */
   clearCache(): void {
     this.cache.clear();
-    console.log('Asset cache cleared');
   }
 
   /**
@@ -150,7 +146,6 @@ export class AssetLoader {
   clearAsset(filename: string): void {
     const key = `anim_${filename}`;
     this.cache.delete(key);
-    console.log(`Cleared asset from cache: ${filename}`);
   }
 
   /**

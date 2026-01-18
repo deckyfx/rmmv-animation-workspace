@@ -10,10 +10,21 @@ import type { RMMVAnimation, RMMVCellData, RMMVAnimationTiming } from '@decky.fx
 import { useAnimationStore } from '@react/store/useAnimationStore';
 import { getCellCoordinates, RMMVAnimationPosition, RMMVFlashScope } from '@decky.fx/rmmv-animation-player';
 import { Target } from '@phaser/objects/Target';
+import { SpriteTarget } from '@phaser/objects/SpriteTarget';
 import { EditableCell } from '@phaser/objects/EditableCell';
 
 export interface AnimationSceneData {
   animation: RMMVAnimation;
+}
+
+/**
+ * Target type for animation scene
+ */
+export enum TargetType {
+  /** Basic shape target (circle/stickman) */
+  SHAPE = 'shape',
+  /** Sprite-based target (enemy sprite) */
+  SPRITE = 'sprite',
 }
 
 /**
@@ -27,8 +38,11 @@ export class AnimationScene extends Phaser.Scene {
   /** Current animation being displayed */
   private animation!: RMMVAnimation;
 
-  /** Target object for animation positioning */
-  private target?: Target;
+  /** Target type to use (can be changed via registry) */
+  private targetType: TargetType = TargetType.SPRITE;
+
+  /** Target object for animation positioning (supports both types) */
+  private target?: Target | SpriteTarget;
 
   /** Container for animation sprites */
   private animationContainer?: Phaser.GameObjects.Container;
@@ -89,12 +103,8 @@ export class AnimationScene extends Phaser.Scene {
     // Create title text showing animation name
     this.createTitleText();
 
-    // Create target stickman at center
-    this.target = new Target(
-      this,
-      this.cameras.main.centerX,
-      this.cameras.main.centerY
-    );
+    // Create target at center (type depends on targetType setting)
+    this.createTarget();
 
     // Position animation container based on animation position setting
     const animationPos = this.getAnimationPosition();
@@ -205,6 +215,28 @@ export class AnimationScene extends Phaser.Scene {
 
     this.titleText.setOrigin(0.5, 0);
     this.titleText.setDepth(1000); // Ensure it's always on top
+  }
+
+  /**
+   * Create animation target (shape or sprite based on targetType)
+   */
+  private createTarget(): void {
+    const centerX = this.cameras.main.centerX;
+    const centerY = this.cameras.main.centerY;
+
+    if (this.targetType === TargetType.SPRITE) {
+      // Create sprite-based target (Lamia enemy)
+      this.target = new SpriteTarget(this, {
+        texture: 'enemy_lamia',
+        x: centerX,
+        y: centerY,
+        scale: 0.5, // Scale down the sprite
+      });
+      this.add.existing(this.target);
+    } else {
+      // Create shape-based target (original stickman)
+      this.target = new Target(this, centerX, centerY);
+    }
   }
 
   /**
@@ -330,13 +362,10 @@ export class AnimationScene extends Phaser.Scene {
    * Advance to next frame
    */
   private advanceFrame(): void {
-    console.log('[Playback] Advancing from frame', this.currentFrameIndex, 'to', this.currentFrameIndex + 1);
-
     this.currentFrameIndex++;
 
     // Check if we reached the end
     if (this.currentFrameIndex >= this.animation.frames.length) {
-      console.log('[Playback] Reached end of animation, stopping');
       // Stop playback and reset to beginning
       this.currentFrameIndex = 0;
       this.isPlaying = false;
@@ -344,8 +373,6 @@ export class AnimationScene extends Phaser.Scene {
       this.renderCurrentFrame();
       return;
     }
-
-    console.log('[Playback] Now on frame', this.currentFrameIndex);
 
     // Check for ending flash effects
     this.checkFlashEffects();
@@ -361,18 +388,12 @@ export class AnimationScene extends Phaser.Scene {
    * Check and clear flash effects that have reached their end frame
    */
   private checkFlashEffects(): void {
-    console.log('[Flash] Checking flash effects at frame', this.currentFrameIndex, '- Active effects:', this.activeFlashEffects.length);
-
     // Check each active flash effect
     for (let i = this.activeFlashEffects.length - 1; i >= 0; i--) {
       const effect = this.activeFlashEffects[i];
       if (!effect) continue;
 
-      console.log('[Flash] Effect', i, '- type:', effect.type, 'endFrame:', effect.endFrame);
-
       if (this.currentFrameIndex >= effect.endFrame) {
-        console.log('[Flash] Effect ended, clearing at frame', this.currentFrameIndex);
-
         if (effect.type === 'target') {
           // Clear target tint
           if (this.target) {
@@ -396,10 +417,7 @@ export class AnimationScene extends Phaser.Scene {
    * Process timing events (sound effects, flashes) for current frame
    */
   private processTimingEvents(): void {
-    console.log('[Timing] Processing timing events for frame:', this.currentFrameIndex);
-
     if (!this.animation.timings || this.animation.timings.length === 0) {
-      console.log('[Timing] No timing events in animation');
       return;
     }
 
@@ -408,11 +426,7 @@ export class AnimationScene extends Phaser.Scene {
       (timing) => timing.frame === this.currentFrameIndex
     );
 
-    console.log('[Timing] Found', timings.length, 'timing events for frame', this.currentFrameIndex);
-
     for (const timing of timings) {
-      console.log('[Timing] Processing timing event:', timing);
-
       // Play sound effect if specified
       if (timing.se && timing.se.name && timing.se.name !== '') {
         this.playSoundEffect(timing.se);
@@ -430,11 +444,8 @@ export class AnimationScene extends Phaser.Scene {
   private processFlashEffect(timing: RMMVAnimationTiming): void {
     const { flashScope, flashColor, flashDuration } = timing;
 
-    console.log('[Flash] Processing flash effect:', { flashScope, flashColor, flashDuration });
-
     // No flash
     if (flashScope === RMMVFlashScope.NONE || flashDuration <= 0) {
-      console.log('[Flash] Skipping - no flash or zero duration');
       return;
     }
 
@@ -444,19 +455,13 @@ export class AnimationScene extends Phaser.Scene {
     const b = Math.floor(flashColor[2] || 0);
     const tintColor = (r << 16) | (g << 8) | b;
 
-    console.log('[Flash] Converted color - R:', r, 'G:', g, 'B:', b, 'Tint:', '0x' + tintColor.toString(16).padStart(6, '0'));
-
     // Flash duration is already in animation frames (rendered frames)
     const endFrame = this.currentFrameIndex + flashDuration;
-    console.log('[Flash] Duration:', flashDuration, 'animation frames');
-    console.log('[Flash] Current frame:', this.currentFrameIndex, '→ End frame:', endFrame);
 
     switch (flashScope) {
       case RMMVFlashScope.TARGET:
-        console.log('[Flash] TARGET flash - tinting target');
         // Flash target with tint
         if (this.target) {
-          console.log('[Flash] Target exists, applying tint');
           this.target.setTint(tintColor);
 
           // Schedule clearing at end frame
@@ -464,26 +469,20 @@ export class AnimationScene extends Phaser.Scene {
             type: 'target',
             endFrame,
           });
-        } else {
-          console.log('[Flash] No target available!');
         }
         break;
 
       case RMMVFlashScope.SCREEN:
-        console.log('[Flash] SCREEN flash - using camera');
         // Flash entire screen using camera
         // Convert animation frames to milliseconds (15 FPS = 66.67ms per frame)
         const durationMs = flashDuration * (1000 / 15);
         const intensity = (flashColor[3] || 255) / 255;
-        console.log('[Flash] Intensity:', intensity, 'Duration (ms):', durationMs);
         this.cameras.main.flash(durationMs, r, g, b, false, undefined, intensity);
         break;
 
       case RMMVFlashScope.HIDE_TARGET:
-        console.log('[Flash] HIDE_TARGET flash - tinting and hiding target');
         // Flash and hide target
         if (this.target) {
-          console.log('[Flash] Target exists, applying tint and hiding');
           this.target.setTint(tintColor);
           this.target.setVisible(false);
 
@@ -492,8 +491,6 @@ export class AnimationScene extends Phaser.Scene {
             type: 'hide_target',
             endFrame,
           });
-        } else {
-          console.log('[Flash] No target available!');
         }
         break;
     }
@@ -627,8 +624,6 @@ export class AnimationScene extends Phaser.Scene {
    * Render current frame
    */
   private renderCurrentFrame(): void {
-    console.log('[Render] Rendering frame:', this.currentFrameIndex);
-
     if (!this.animationContainer) return;
 
     // Clear previous content

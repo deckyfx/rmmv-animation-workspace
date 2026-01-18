@@ -65,6 +65,10 @@ export class PreloadScene extends Phaser.Scene {
     // Load Font Awesome font for Phaser UI icons (handles)
     this.load.binary('fontawesome', '/webfonts/fa-solid-900.woff2');
 
+    // Load enemy sprites for targets
+    this.load.setPath('/assets/img/enemies');
+    this.load.image('enemy_lamia', 'Lamia.png');
+
     // Load sprite sheets for this animation
     this.load.setPath('/assets/img/animations');
 
@@ -123,11 +127,8 @@ export class PreloadScene extends Phaser.Scene {
   async create(): Promise<void> {
     // Load Font Awesome font into document for Phaser Text objects
     try {
-      console.log('[PreloadScene] Loading Font Awesome from /webfonts/fa-solid-900.woff2...');
-
       // Get the font binary data from Phaser cache
       const fontData = this.cache.binary.get('fontawesome');
-      console.log('[PreloadScene] Font data loaded:', fontData ? `${fontData.byteLength} bytes` : 'null');
 
       if (fontData) {
         // Register font as "FontAwesome" (this is the name that works in Phaser)
@@ -138,7 +139,6 @@ export class PreloadScene extends Phaser.Scene {
 
         const loadedFont = await fontFace.load();
         document.fonts.add(loadedFont);
-        console.log('[PreloadScene] FontAwesome loaded and ready for Phaser');
 
         // Wait for font to be ready
         await document.fonts.ready;

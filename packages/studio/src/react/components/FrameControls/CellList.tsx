@@ -20,14 +20,6 @@ export function CellList() {
 
   const currentFrame = selectedAnimation.frames[activeFrameIndex];
 
-  // Debug: Log frame data
-  console.log('CellList Debug:', {
-    animationId: selectedAnimation.id,
-    activeFrameIndex,
-    currentFrame,
-    frameLength: currentFrame?.length,
-  });
-
   if (!currentFrame || currentFrame.length === 0) {
     return (
       <div className="cell-list">

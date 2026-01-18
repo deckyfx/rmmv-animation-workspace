@@ -175,45 +175,32 @@ export class Target extends Phaser.GameObjects.Container {
    * @param color - Tint color in 0xRRGGBB format
    */
   setTint(color: number): void {
-    console.log('[Target] setTint called with color:', '0x' + color.toString(16).padStart(6, '0'));
-    console.log('[Target] isTinted before:', this.isTinted);
-
     if (this.isTinted) {
-      console.log('[Target] Already tinted, skipping');
       return; // Already tinted
     }
 
     this.isTinted = true;
 
     // Use tint color directly for flash effect (don't blend)
-    console.log('[Target] Applying tint - original color:', '0x' + this.originalColor.toString(16).padStart(6, '0'));
     this.config.color = color;
     this.config.alpha = 1.0; // Flash at full opacity
-    console.log('[Target] New color:', '0x' + this.config.color.toString(16).padStart(6, '0'), 'alpha:', this.config.alpha);
     this.draw();
-    console.log('[Target] Redraw complete');
   }
 
   /**
    * Remove tint from target (implements AnimationTarget interface)
    */
   clearTint(): void {
-    console.log('[Target] clearTint called');
-    console.log('[Target] isTinted before:', this.isTinted);
-
     if (!this.isTinted) {
-      console.log('[Target] Not tinted, skipping');
       return; // Not tinted
     }
 
     this.isTinted = false;
 
     // Restore original color and alpha
-    console.log('[Target] Restoring original - color:', '0x' + this.originalColor.toString(16).padStart(6, '0'), 'alpha:', this.originalAlpha);
     this.config.color = this.originalColor;
     this.config.alpha = this.originalAlpha;
     this.draw();
-    console.log('[Target] Restore complete');
   }
 
   /**
