@@ -121,23 +121,31 @@ export async function getAnimationById(id: number): Promise<RMMVAnimation | null
     .where(eq(animationTimings.animationId, id))
     .orderBy(asc(animationTimings.frame));
 
+  console.log('[animationService] Raw timings from DB:', JSON.stringify(timingsResult, null, 2));
+
   // Transform to RMMV format
   const frames: RMMVFrame[] = framesResult.map((f: any) => f.cells);
 
-  const timings: RMMVAnimationTiming[] = timingsResult.map((t: any) => ({
-    frame: t.frame,
-    flashScope: t.flashScope,
-    flashColor: t.flashColor,
-    flashDuration: t.flashDuration,
-    se: t.seName
-      ? {
-          name: t.seName,
-          volume: t.seVolume || 90,
-          pitch: t.sePitch || 100,
-          pan: t.sePan || 0,
-        }
-      : null,
-  }));
+  const timings: RMMVAnimationTiming[] = timingsResult.map((t: any) => {
+    console.log('[animationService] Processing timing:', t);
+    console.log('[animationService] t.flashScope:', t.flashScope);
+    console.log('[animationService] t.flash_scope:', (t as any).flash_scope);
+
+    return {
+      frame: t.frame,
+      flashScope: t.flashScope,
+      flashColor: typeof t.flashColor === 'string' ? JSON.parse(t.flashColor) : t.flashColor,
+      flashDuration: t.flashDuration,
+      se: t.seName
+        ? {
+            name: t.seName,
+            volume: t.seVolume || 90,
+            pitch: t.sePitch || 100,
+            pan: t.sePan || 0,
+          }
+        : null,
+    };
+  });
 
   return {
     id: animation.id,

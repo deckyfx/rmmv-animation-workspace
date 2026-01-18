@@ -24,8 +24,8 @@
  */
 
 import Phaser from 'phaser';
-import type { RMMVAnimation, RMMVCellData, RMMVAnimationTiming } from '../types/rmmv';
-import { getCellCoordinates } from '../types/rmmv';
+import type { RMMVAnimation, RMMVCellData, RMMVAnimationTiming, AnimationTarget } from '../types/rmmv';
+import { getCellCoordinates, RMMVFlashScope, RMMVAnimationPosition } from '../types/rmmv';
 
 /**
  * Exported animation config format (from /api/animations/:id/export)
@@ -99,6 +99,9 @@ export class AnimationPlayer {
   /** Container for animation sprites */
   private container?: Phaser.GameObjects.Container;
 
+  /** Animation target (for flash effects and positioning) */
+  private target?: AnimationTarget;
+
   /** Whether assets have been preloaded */
   private assetsLoaded = false;
 
@@ -114,6 +117,9 @@ export class AnimationPlayer {
 
   /** Promise resolve function for async play */
   private playResolve?: () => void;
+
+  /** Active flash tween timers (for cleanup) */
+  private activeFlashTimers: Phaser.Time.TimerEvent[] = [];
 
   /**
    * Create animation player
@@ -197,22 +203,30 @@ export class AnimationPlayer {
    * Returns a Promise that resolves when animation completes.
    * For looped animations, the Promise never resolves.
    *
-   * @param target - Target position { x, y }
+   * @param target - Animation target (object with position, tint, visibility methods) or simple position { x, y }. Optional for screen-positioned animations.
    * @param options - Playback options
    * @returns Promise that resolves when animation completes (does not resolve for looped animations)
    *
    * @example
    * ```typescript
-   * // Await animation completion
-   * await player.play({ x: 400, y: 300 });
-   * console.log('Animation finished!');
+   * // With Phaser sprite as target (flash effects enabled)
+   * const sprite = this.add.sprite(100, 100, 'hero');
+   * await player.play(sprite);
    *
-   * // Chain animations
+   * // With custom target
+   * const customTarget = {
+   *   x: 100, y: 100, width: 64, height: 64,
+   *   setTint: (c) => console.log('Tint:', c),
+   *   clearTint: () => {},
+   *   setVisible: (v) => {}
+   * };
+   * await player.play(customTarget);
+   *
+   * // With simple position (legacy)
    * await player.play({ x: 400, y: 300 });
-   * await anotherPlayer.play({ x: 500, y: 300 });
    * ```
    */
-  play(target: TargetPosition, options: PlaybackOptions = {}): Promise<void> {
+  play(target?: AnimationTarget | TargetPosition, options: PlaybackOptions = {}): Promise<void> {
     if (!this.assetsLoaded) {
       throw new Error('Assets not loaded. Call preload() first.');
     }
@@ -226,8 +240,18 @@ export class AnimationPlayer {
     this.onComplete = options.onComplete;
     this.onUpdate = options.onUpdate;
 
-    // Create container at target position
-    this.container = this.scene.add.container(target.x, target.y);
+    // Store target if it implements AnimationTarget interface
+    if (target && 'setTint' in target && 'clearTint' in target && 'setVisible' in target) {
+      this.target = target as AnimationTarget;
+    } else {
+      this.target = undefined;
+    }
+
+    // Calculate animation position based on animation.position
+    const position = this.calculateAnimationPosition(target);
+
+    // Create container at calculated position
+    this.container = this.scene.add.container(position.x, position.y);
 
     // Start playback
     this.isPlaying = true;
@@ -271,6 +295,15 @@ export class AnimationPlayer {
       this.container.destroy(true);
       this.container = undefined;
     }
+
+    // Clean up active flash timers
+    for (const timer of this.activeFlashTimers) {
+      timer.remove();
+    }
+    this.activeFlashTimers = [];
+
+    // Clear target reference
+    this.target = undefined;
 
     // Reset state
     this.currentFrameIndex = 0;
@@ -472,6 +505,53 @@ export class AnimationPlayer {
   }
 
   /**
+   * Calculate animation position based on animation.position and target
+   *
+   * @param target - Animation target or position
+   * @returns Position { x, y } for animation container
+   */
+  private calculateAnimationPosition(target?: AnimationTarget | TargetPosition): { x: number; y: number } {
+    // For screen-positioned animations (position: 3), use center of screen
+    if (this.animation.position === RMMVAnimationPosition.SCREEN) {
+      const camera = this.scene.cameras.main;
+      return {
+        x: camera.centerX,
+        y: camera.centerY,
+      };
+    }
+
+    // If no target provided, default to center of screen
+    if (!target) {
+      const camera = this.scene.cameras.main;
+      return {
+        x: camera.centerX,
+        y: camera.centerY,
+      };
+    }
+
+    // Use target position
+    const baseX = target.x;
+    let baseY = target.y;
+
+    // Adjust Y position based on animation.position if target has height
+    if ('height' in target && typeof target.height === 'number') {
+      switch (this.animation.position) {
+        case RMMVAnimationPosition.HEAD:
+          baseY -= target.height / 2;
+          break;
+        case RMMVAnimationPosition.CENTER:
+          // No adjustment needed
+          break;
+        case RMMVAnimationPosition.FEET:
+          baseY += target.height / 2;
+          break;
+      }
+    }
+
+    return { x: baseX, y: baseY };
+  }
+
+  /**
    * Process timing events for current frame (sound effects, flashes)
    */
   private processTimingEvents(): void {
@@ -492,10 +572,67 @@ export class AnimationPlayer {
         }
       }
 
-      // TODO: Implement screen flash effect
-      // flashScope: 0=none, 1=target, 2=screen, 3=hide target
-      // flashColor: [r, g, b, a] (0-255)
-      // flashDuration: frames
+      // Handle flash effects
+      this.processFlashEffect(timing);
+    }
+  }
+
+  /**
+   * Process flash effect for a timing event
+   */
+  private processFlashEffect(timing: RMMVAnimationTiming): void {
+    const { flashScope, flashColor, flashDuration } = timing;
+
+    // No flash
+    if (flashScope === RMMVFlashScope.NONE || flashDuration <= 0) {
+      return;
+    }
+
+    // Convert RMMV flash color [R, G, B, Intensity] to Phaser tint (0xRRGGBB)
+    const r = Math.floor((flashColor[0] || 0));
+    const g = Math.floor((flashColor[1] || 0));
+    const b = Math.floor((flashColor[2] || 0));
+    const tintColor = (r << 16) | (g << 8) | b;
+
+    // Calculate duration in milliseconds (RMMV uses 4 frames per animation frame at 15fps)
+    const durationMs = (flashDuration / 4) * (1000 / 15);
+
+    switch (flashScope) {
+      case RMMVFlashScope.TARGET:
+        // Flash target with tint
+        if (this.target) {
+          this.target.setTint(tintColor);
+
+          const timer = this.scene.time.delayedCall(durationMs, () => {
+            if (this.target) {
+              this.target.clearTint();
+            }
+          });
+          this.activeFlashTimers.push(timer);
+        }
+        break;
+
+      case RMMVFlashScope.SCREEN:
+        // Flash entire screen using camera
+        const intensity = (flashColor[3] || 255) / 255;
+        this.scene.cameras.main.flash(durationMs, r, g, b, false, undefined, intensity);
+        break;
+
+      case RMMVFlashScope.HIDE_TARGET:
+        // Flash and hide target
+        if (this.target) {
+          this.target.setTint(tintColor);
+          this.target.setVisible(false);
+
+          const timer = this.scene.time.delayedCall(durationMs, () => {
+            if (this.target) {
+              this.target.clearTint();
+              this.target.setVisible(true);
+            }
+          });
+          this.activeFlashTimers.push(timer);
+        }
+        break;
     }
   }
 

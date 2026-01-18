@@ -59,6 +59,13 @@ export class Target extends Phaser.GameObjects.Container {
   private centerMarker: Phaser.GameObjects.Graphics;
   private feetMarker: Phaser.GameObjects.Graphics;
 
+  /** Original color and alpha for tint restoration */
+  private originalColor: number;
+  private originalAlpha: number;
+
+  /** Current tint state */
+  private isTinted = false;
+
   constructor(
     scene: Phaser.Scene,
     x: number,
@@ -68,6 +75,10 @@ export class Target extends Phaser.GameObjects.Container {
     super(scene, x, y);
 
     this.config = { ...DEFAULT_TARGET_CONFIG, ...config };
+
+    // Store original color and alpha
+    this.originalColor = this.config.color;
+    this.originalAlpha = this.config.alpha;
 
     // Create body graphics
     this.bodyGraphics = this.scene.add.graphics();
@@ -86,7 +97,7 @@ export class Target extends Phaser.GameObjects.Container {
   }
 
   /**
-   * Draw the target visualization as a simple stickman
+   * Draw the target visualization as a simple solid circle
    */
   private draw(): void {
     const { height, color, alpha } = this.config;
@@ -98,40 +109,19 @@ export class Target extends Phaser.GameObjects.Container {
     this.centerMarker.clear();
     this.feetMarker.clear();
 
-    // Stickman dimensions (proportional to height)
-    const headRadius = height * 0.15;
-    const neckY = -halfHeight + headRadius * 2;
-    const bodyLength = height * 0.4;
-    const bodyEndY = neckY + bodyLength;
-    const armLength = height * 0.3;
-    const legLength = height * 0.35;
-
-    // Draw stickman with lines
-    this.bodyGraphics.lineStyle(3, color, alpha);
-
-    // Head (circle)
-    this.bodyGraphics.strokeCircle(0, -halfHeight + headRadius, headRadius);
-
-    // Body (vertical line from neck to hips)
-    this.bodyGraphics.lineBetween(0, neckY, 0, bodyEndY);
-
-    // Arms (horizontal line with angle)
-    const armY = neckY + bodyLength * 0.3;
-    this.bodyGraphics.lineBetween(-armLength, armY, armLength, armY);
-
-    // Legs (two lines from hips to feet)
-    const legSpread = height * 0.15;
-    this.bodyGraphics.lineBetween(0, bodyEndY, -legSpread, bodyEndY + legLength);
-    this.bodyGraphics.lineBetween(0, bodyEndY, legSpread, bodyEndY + legLength);
+    // Draw simple solid circle (radius = half of height)
+    const radius = halfHeight;
+    this.bodyGraphics.fillStyle(color, alpha);
+    this.bodyGraphics.fillCircle(0, 0, radius);
 
     // Draw position markers (small circles)
     const markerRadius = 4;
 
-    // Head marker (top of head)
+    // Head marker (top)
     this.headMarker.fillStyle(0xff6b6b, 0.8);
     this.headMarker.fillCircle(0, -halfHeight, markerRadius);
 
-    // Center marker (middle of body)
+    // Center marker (middle)
     this.centerMarker.fillStyle(0x51cf66, 0.8);
     this.centerMarker.fillCircle(0, 0, markerRadius);
 
@@ -176,5 +166,63 @@ export class Target extends Phaser.GameObjects.Container {
    */
   getConfig(): TargetConfig {
     return { ...this.config };
+  }
+
+  /**
+   * Apply tint color to target (implements AnimationTarget interface)
+   * For Graphics-based target, we replace the color directly for flash effect
+   *
+   * @param color - Tint color in 0xRRGGBB format
+   */
+  setTint(color: number): void {
+    console.log('[Target] setTint called with color:', '0x' + color.toString(16).padStart(6, '0'));
+    console.log('[Target] isTinted before:', this.isTinted);
+
+    if (this.isTinted) {
+      console.log('[Target] Already tinted, skipping');
+      return; // Already tinted
+    }
+
+    this.isTinted = true;
+
+    // Use tint color directly for flash effect (don't blend)
+    console.log('[Target] Applying tint - original color:', '0x' + this.originalColor.toString(16).padStart(6, '0'));
+    this.config.color = color;
+    this.config.alpha = 1.0; // Flash at full opacity
+    console.log('[Target] New color:', '0x' + this.config.color.toString(16).padStart(6, '0'), 'alpha:', this.config.alpha);
+    this.draw();
+    console.log('[Target] Redraw complete');
+  }
+
+  /**
+   * Remove tint from target (implements AnimationTarget interface)
+   */
+  clearTint(): void {
+    console.log('[Target] clearTint called');
+    console.log('[Target] isTinted before:', this.isTinted);
+
+    if (!this.isTinted) {
+      console.log('[Target] Not tinted, skipping');
+      return; // Not tinted
+    }
+
+    this.isTinted = false;
+
+    // Restore original color and alpha
+    console.log('[Target] Restoring original - color:', '0x' + this.originalColor.toString(16).padStart(6, '0'), 'alpha:', this.originalAlpha);
+    this.config.color = this.originalColor;
+    this.config.alpha = this.originalAlpha;
+    this.draw();
+    console.log('[Target] Restore complete');
+  }
+
+  /**
+   * Set visibility of target (implements AnimationTarget interface)
+   * Uses Phaser Container's built-in setVisible method
+   *
+   * @param visible - Whether target should be visible
+   */
+  override setVisible(visible: boolean): this {
+    return super.setVisible(visible);
   }
 }

@@ -430,3 +430,58 @@ export enum RMMVFlashScope {
   /** Flash and temporarily hide the target */
   HIDE_TARGET = 3,
 }
+
+/**
+ * Animation target interface
+ *
+ * Any object can be an animation target as long as it implements these methods.
+ * Phaser.GameObjects.GameObject naturally implements this interface.
+ *
+ * @example
+ * // Using with Phaser Sprite
+ * const sprite = this.add.sprite(100, 100, 'hero');
+ * animationPlayer.play(sprite);
+ *
+ * @example
+ * // Custom target object
+ * const customTarget = {
+ *   x: 100,
+ *   y: 100,
+ *   width: 64,
+ *   height: 64,
+ *   setTint: (color: number) => console.log('Tint:', color),
+ *   clearTint: () => console.log('Clear tint'),
+ *   setVisible: (visible: boolean) => console.log('Visible:', visible)
+ * };
+ * animationPlayer.play(customTarget);
+ */
+export interface AnimationTarget {
+  /** X position in scene */
+  x: number;
+
+  /** Y position in scene */
+  y: number;
+
+  /** Width of target (used for positioning animation) */
+  width: number;
+
+  /** Height of target (used for positioning animation based on position: head/center/feet) */
+  height: number;
+
+  /**
+   * Apply tint color to target
+   * @param color - Tint color in 0xRRGGBB format
+   */
+  setTint(color: number): void;
+
+  /**
+   * Remove tint from target
+   */
+  clearTint(): void;
+
+  /**
+   * Set visibility of target
+   * @param visible - Whether target should be visible
+   */
+  setVisible(visible: boolean): void;
+}

@@ -6,9 +6,9 @@
  */
 
 import Phaser from 'phaser';
-import type { RMMVAnimation, RMMVCellData } from '@decky.fx/rmmv-animation-player';
+import type { RMMVAnimation, RMMVCellData, RMMVAnimationTiming } from '@decky.fx/rmmv-animation-player';
 import { useAnimationStore } from '@react/store/useAnimationStore';
-import { getCellCoordinates, RMMVAnimationPosition } from '@decky.fx/rmmv-animation-player';
+import { getCellCoordinates, RMMVAnimationPosition, RMMVFlashScope } from '@decky.fx/rmmv-animation-player';
 import { Target } from '@phaser/objects/Target';
 import { EditableCell } from '@phaser/objects/EditableCell';
 
@@ -49,6 +49,12 @@ export class AnimationScene extends Phaser.Scene {
   private isPlaying = false;
   private currentFrameIndex = 0;
   private playbackSpeed = 1.0;
+
+  /** Active flash effects (frame-based, not time-based) */
+  private activeFlashEffects: Array<{
+    type: 'target' | 'hide_target';
+    endFrame: number;
+  }> = [];
 
   constructor() {
     super({ key: 'AnimationScene' });
@@ -324,10 +330,13 @@ export class AnimationScene extends Phaser.Scene {
    * Advance to next frame
    */
   private advanceFrame(): void {
+    console.log('[Playback] Advancing from frame', this.currentFrameIndex, 'to', this.currentFrameIndex + 1);
+
     this.currentFrameIndex++;
 
     // Check if we reached the end
     if (this.currentFrameIndex >= this.animation.frames.length) {
+      console.log('[Playback] Reached end of animation, stopping');
       // Stop playback and reset to beginning
       this.currentFrameIndex = 0;
       this.isPlaying = false;
@@ -335,6 +344,11 @@ export class AnimationScene extends Phaser.Scene {
       this.renderCurrentFrame();
       return;
     }
+
+    console.log('[Playback] Now on frame', this.currentFrameIndex);
+
+    // Check for ending flash effects
+    this.checkFlashEffects();
 
     // Check for timing events at this frame
     this.processTimingEvents();
@@ -344,10 +358,48 @@ export class AnimationScene extends Phaser.Scene {
   }
 
   /**
+   * Check and clear flash effects that have reached their end frame
+   */
+  private checkFlashEffects(): void {
+    console.log('[Flash] Checking flash effects at frame', this.currentFrameIndex, '- Active effects:', this.activeFlashEffects.length);
+
+    // Check each active flash effect
+    for (let i = this.activeFlashEffects.length - 1; i >= 0; i--) {
+      const effect = this.activeFlashEffects[i];
+      if (!effect) continue;
+
+      console.log('[Flash] Effect', i, '- type:', effect.type, 'endFrame:', effect.endFrame);
+
+      if (this.currentFrameIndex >= effect.endFrame) {
+        console.log('[Flash] Effect ended, clearing at frame', this.currentFrameIndex);
+
+        if (effect.type === 'target') {
+          // Clear target tint
+          if (this.target) {
+            this.target.clearTint();
+          }
+        } else if (effect.type === 'hide_target') {
+          // Clear target tint and restore visibility
+          if (this.target) {
+            this.target.clearTint();
+            this.target.setVisible(true);
+          }
+        }
+
+        // Remove from active effects
+        this.activeFlashEffects.splice(i, 1);
+      }
+    }
+  }
+
+  /**
    * Process timing events (sound effects, flashes) for current frame
    */
   private processTimingEvents(): void {
+    console.log('[Timing] Processing timing events for frame:', this.currentFrameIndex);
+
     if (!this.animation.timings || this.animation.timings.length === 0) {
+      console.log('[Timing] No timing events in animation');
       return;
     }
 
@@ -356,13 +408,94 @@ export class AnimationScene extends Phaser.Scene {
       (timing) => timing.frame === this.currentFrameIndex
     );
 
+    console.log('[Timing] Found', timings.length, 'timing events for frame', this.currentFrameIndex);
+
     for (const timing of timings) {
+      console.log('[Timing] Processing timing event:', timing);
+
       // Play sound effect if specified
       if (timing.se && timing.se.name && timing.se.name !== '') {
         this.playSoundEffect(timing.se);
       }
 
-      // TODO: Handle flash effects (flashScope, flashColor, flashDuration)
+      // Handle flash effects
+      this.processFlashEffect(timing);
+    }
+  }
+
+  /**
+   * Process flash effect for a timing event
+   * Flash duration is in FRAMES, not milliseconds
+   */
+  private processFlashEffect(timing: RMMVAnimationTiming): void {
+    const { flashScope, flashColor, flashDuration } = timing;
+
+    console.log('[Flash] Processing flash effect:', { flashScope, flashColor, flashDuration });
+
+    // No flash
+    if (flashScope === RMMVFlashScope.NONE || flashDuration <= 0) {
+      console.log('[Flash] Skipping - no flash or zero duration');
+      return;
+    }
+
+    // Convert RMMV flash color [R, G, B, Intensity] to Phaser tint (0xRRGGBB)
+    const r = Math.floor(flashColor[0] || 0);
+    const g = Math.floor(flashColor[1] || 0);
+    const b = Math.floor(flashColor[2] || 0);
+    const tintColor = (r << 16) | (g << 8) | b;
+
+    console.log('[Flash] Converted color - R:', r, 'G:', g, 'B:', b, 'Tint:', '0x' + tintColor.toString(16).padStart(6, '0'));
+
+    // Flash duration is already in animation frames (rendered frames)
+    const endFrame = this.currentFrameIndex + flashDuration;
+    console.log('[Flash] Duration:', flashDuration, 'animation frames');
+    console.log('[Flash] Current frame:', this.currentFrameIndex, '→ End frame:', endFrame);
+
+    switch (flashScope) {
+      case RMMVFlashScope.TARGET:
+        console.log('[Flash] TARGET flash - tinting target');
+        // Flash target with tint
+        if (this.target) {
+          console.log('[Flash] Target exists, applying tint');
+          this.target.setTint(tintColor);
+
+          // Schedule clearing at end frame
+          this.activeFlashEffects.push({
+            type: 'target',
+            endFrame,
+          });
+        } else {
+          console.log('[Flash] No target available!');
+        }
+        break;
+
+      case RMMVFlashScope.SCREEN:
+        console.log('[Flash] SCREEN flash - using camera');
+        // Flash entire screen using camera
+        // Convert frame duration to milliseconds for camera flash
+        const durationMs = (flashDuration / 4) * (1000 / 15);
+        const intensity = (flashColor[3] || 255) / 255;
+        console.log('[Flash] Intensity:', intensity, 'Duration (ms):', durationMs);
+        this.cameras.main.flash(durationMs, r, g, b, false, undefined, intensity);
+        break;
+
+      case RMMVFlashScope.HIDE_TARGET:
+        console.log('[Flash] HIDE_TARGET flash - tinting and hiding target');
+        // Flash and hide target
+        if (this.target) {
+          console.log('[Flash] Target exists, applying tint and hiding');
+          this.target.setTint(tintColor);
+          this.target.setVisible(false);
+
+          // Schedule clearing at end frame
+          this.activeFlashEffects.push({
+            type: 'hide_target',
+            endFrame,
+          });
+        } else {
+          console.log('[Flash] No target available!');
+        }
+        break;
     }
   }
 
@@ -494,6 +627,8 @@ export class AnimationScene extends Phaser.Scene {
    * Render current frame
    */
   private renderCurrentFrame(): void {
+    console.log('[Render] Rendering frame:', this.currentFrameIndex);
+
     if (!this.animationContainer) return;
 
     // Clear previous content
@@ -636,5 +771,8 @@ export class AnimationScene extends Phaser.Scene {
     if (this.unsubscribe) {
       this.unsubscribe();
     }
+
+    // Clear active flash effects
+    this.activeFlashEffects = [];
   }
 }

@@ -24,6 +24,7 @@ export type {
   RMMVSoundEffect,
   RMMVSpriteSheetConfig,
   CellCoordinates,
+  AnimationTarget,
 } from './types/rmmv';
 
 export {
