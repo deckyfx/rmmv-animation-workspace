@@ -144,11 +144,19 @@ export function CellEditDialog({ animation }: CellEditDialogProps) {
 
   if (!cellDialog.isOpen) return null;
 
+  // Build title with cell index
+  let dialogTitle = 'Add Cell';
+  if (cellDialog.mode === 'edit') {
+    dialogTitle = cellDialog.cellIndex !== null
+      ? `Edit Cell #${cellDialog.cellIndex}`
+      : 'Edit Cell';
+  }
+
   return (
     <Dialog
       isOpen={cellDialog.isOpen}
       onClose={closeCellDialog}
-      title={cellDialog.mode === 'edit' ? 'Edit Cell' : 'Add Cell'}
+      title={dialogTitle}
       size="large"
     >
       <div className="cell-edit-dialog">

@@ -62,6 +62,9 @@ export class PreloadScene extends Phaser.Scene {
     });
     percentText.setOrigin(0.5);
 
+    // Load Font Awesome font for Phaser UI icons (handles)
+    this.load.binary('fontawesome', '/webfonts/fa-solid-900.woff2');
+
     // Load sprite sheets for this animation
     this.load.setPath('/assets/img/animations');
 
@@ -117,7 +120,36 @@ export class PreloadScene extends Phaser.Scene {
   /**
    * Create scene and transition to AnimationScene
    */
-  create(): void {
+  async create(): Promise<void> {
+    // Load Font Awesome font into document for Phaser Text objects
+    try {
+      console.log('[PreloadScene] Loading Font Awesome from /webfonts/fa-solid-900.woff2...');
+
+      // Get the font binary data from Phaser cache
+      const fontData = this.cache.binary.get('fontawesome');
+      console.log('[PreloadScene] Font data loaded:', fontData ? `${fontData.byteLength} bytes` : 'null');
+
+      if (fontData) {
+        // Register font as "FontAwesome" (this is the name that works in Phaser)
+        const fontFace = new FontFace('FontAwesome', fontData, {
+          weight: '900',
+          style: 'normal',
+        });
+
+        const loadedFont = await fontFace.load();
+        document.fonts.add(loadedFont);
+        console.log('[PreloadScene] FontAwesome loaded and ready for Phaser');
+
+        // Wait for font to be ready
+        await document.fonts.ready;
+      } else {
+        console.warn('[PreloadScene] Font Awesome binary data not found in Phaser cache');
+      }
+    } catch (error) {
+      console.error('[PreloadScene] Font loading failed:', error);
+      // Continue anyway - icons might not show but app should work
+    }
+
     // Start AnimationScene with the animation data
     this.scene.start('AnimationScene', { animation: this.animation });
   }

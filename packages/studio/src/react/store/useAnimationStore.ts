@@ -177,6 +177,9 @@ export interface AnimationStoreState {
   /** Copy/duplicate a frame */
   copyFrame: (index: number) => void;
 
+  /** Update a specific frame's data */
+  updateFrame: (frameIndex: number, newFrameData: RMMVCellData[]) => void;
+
   /** Reverse frame order */
   reverseFrames: () => void;
 
@@ -765,6 +768,21 @@ export const useAnimationStore = create<AnimationStoreState>((set, get) => ({
 
     // Select the newly copied frame
     set({ activeFrameIndex: index + 1 });
+  },
+
+  updateFrame: (frameIndex: number, newFrameData: RMMVCellData[]) => {
+    const state = get();
+    if (!state.selectedAnimation) return;
+
+    // Update the specific frame with new data
+    const newFrames = [...state.selectedAnimation.frames];
+    newFrames[frameIndex] = newFrameData;
+
+    state.updateSelectedAnimation({
+      ...state.selectedAnimation,
+      frames: newFrames,
+    });
+    state.markDirty('frames');
   },
 
   reverseFrames: () => {

@@ -10,6 +10,7 @@ import type { RMMVAnimation, RMMVCellData } from '@decky.fx/rmmv-animation-playe
 import { useAnimationStore } from '@react/store/useAnimationStore';
 import { getCellCoordinates, RMMVAnimationPosition } from '@decky.fx/rmmv-animation-player';
 import { Target } from '@phaser/objects/Target';
+import { EditableCell } from '@phaser/objects/EditableCell';
 
 export interface AnimationSceneData {
   animation: RMMVAnimation;
@@ -37,6 +38,9 @@ export class AnimationScene extends Phaser.Scene {
 
   /** Title text showing animation name */
   private titleText?: Phaser.GameObjects.Text;
+
+  /** EditableCell instances for preview mode */
+  private editableCells: EditableCell[] = [];
 
   /** Frame timing accumulator (in milliseconds) */
   private frameAccumulator = 0;
@@ -100,7 +104,7 @@ export class AnimationScene extends Phaser.Scene {
     // Subscribe to playback controls only
     this.subscribeToPlaybackControls();
 
-    // Setup canvas click detection for cell editing
+    // Setup click detection for adding new cells (only on empty space)
     this.setupClickDetection();
   }
 
@@ -275,6 +279,43 @@ export class AnimationScene extends Phaser.Scene {
 
         previousPlayback = currentPlayback;
         previousActiveFrame = currentActiveFrame;
+      }
+    });
+  }
+
+  /**
+   * Setup click detection for adding new cells (only on empty space)
+   */
+  private setupClickDetection(): void {
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      // Only handle clicks in preview mode (not playing)
+      if (this.isPlaying) {
+        return;
+      }
+
+      // Check if pointer is over any EditableCell
+      const isOverCell = this.editableCells.some((cell) => {
+        const bounds = cell.getBounds();
+        return bounds.contains(pointer.worldX, pointer.worldY);
+      });
+
+      // Only open dialog if clicking on empty space
+      if (!isOverCell && this.animationContainer) {
+        // Convert world coordinates to animation container local coordinates
+        const localX = pointer.worldX - this.animationContainer.x;
+        const localY = pointer.worldY - this.animationContainer.y;
+
+        // Open dialog to add new cell at clicked position
+        useAnimationStore.getState().openEditCellDialog(-1, [
+          -1, // cellId (empty)
+          Math.round(localX),
+          Math.round(localY),
+          100, // scale
+          0, // rotation
+          0, // flip
+          255, // opacity
+          0, // blendMode
+        ]);
       }
     });
   }
@@ -463,6 +504,10 @@ export class AnimationScene extends Phaser.Scene {
       this.boundingBoxGraphics.clear();
     }
 
+    // Clear previous editable cells
+    this.editableCells.forEach(cell => cell.destroy());
+    this.editableCells = [];
+
     // Get current frame data
     const frame = this.animation.frames[this.currentFrameIndex];
 
@@ -479,17 +524,8 @@ export class AnimationScene extends Phaser.Scene {
         continue;
       }
 
-      // Use named properties from RMMVCellData type
-      const cellId = cell[0];
-      const x = cell[1];
-      const y = cell[2];
-      const scale = cell[3];
-      const rotation = cell[4];
-      const flip = cell[5];
-      const opacity = cell[6];
-      const blendMode = cell[7];
-
       // Get sprite sheet and normalized cell ID for this cell
+      const cellId = cell[0];
       const sheetInfo = this.getSpriteSheetForCell(cellId);
       if (!sheetInfo) {
         continue;
@@ -521,143 +557,76 @@ export class AnimationScene extends Phaser.Scene {
         texture.add(frameKey, 0, cellCoords.x, cellCoords.y, CELL_WIDTH, CELL_HEIGHT);
       }
 
-      // Create sprite from the specific cell frame
-      const sprite = this.add.sprite(x, y, spriteKey, frameKey);
+      // Use EditableCell in preview mode (not playing)
+      if (!this.isPlaying) {
+        const editableCell = new EditableCell(this, {
+          index: cellIndex,
+          cellData: cell,
+          spriteKey,
+          frameKey,
+          onChange: (index: number, newData: RMMVCellData) => {
+            // Update cell data in store
+            const currentFrame = this.animation.frames[this.currentFrameIndex];
+            if (currentFrame && index < currentFrame.length) {
+              currentFrame[index] = newData;
+              useAnimationStore.getState().updateFrame(this.currentFrameIndex, currentFrame);
+            }
+          },
+          onEdit: (index: number, cellData: RMMVCellData) => {
+            // Open edit dialog
+            useAnimationStore.getState().openEditCellDialog(index, cellData);
+          },
+          onDelete: (index: number) => {
+            // Remove cell from frame
+            const currentFrame = this.animation.frames[this.currentFrameIndex];
+            if (currentFrame && index < currentFrame.length) {
+              const newFrame = currentFrame.filter((_, i) => i !== index);
+              useAnimationStore.getState().updateFrame(this.currentFrameIndex, newFrame);
+              this.renderCurrentFrame(); // Re-render after deletion
+            }
+          },
+        });
 
-      // Apply transformations
-      // Scale: percentage (250 = 250% = 2.5x)
-      const finalScale = scale / 100;
-      sprite.setScale(finalScale);
-      sprite.setRotation((rotation * Math.PI) / 180); // Convert degrees to radians
-      sprite.setAlpha(opacity / 255); // Opacity 0-255 to 0-1
+        // Add to animation container
+        this.animationContainer.add(editableCell);
+        this.editableCells.push(editableCell);
+      } else {
+        // Use simple sprite during playback for performance
+        const x = cell[1];
+        const y = cell[2];
+        const scale = cell[3];
+        const rotation = cell[4];
+        const flip = cell[5];
+        const opacity = cell[6];
+        const blendMode = cell[7];
 
-      // Apply flip (horizontal mirror)
-      if (flip) {
-        sprite.setFlipX(true);
-      }
+        const sprite = this.add.sprite(x, y, spriteKey, frameKey);
 
-      // Apply blend mode
-      // RMMV blend modes: 0=normal, 1=add, 2=multiply, 3=screen
-      const blendModes = [
-        Phaser.BlendModes.NORMAL,
-        Phaser.BlendModes.ADD,
-        Phaser.BlendModes.MULTIPLY,
-        Phaser.BlendModes.SCREEN,
-      ];
-      sprite.setBlendMode(blendModes[blendMode] || Phaser.BlendModes.NORMAL);
+        // Apply transformations
+        const finalScale = scale / 100;
+        sprite.setScale(finalScale);
+        sprite.setRotation((rotation * Math.PI) / 180);
+        sprite.setAlpha(opacity / 255);
 
-      // Add to container
-      this.animationContainer.add(sprite);
+        if (flip) {
+          sprite.setFlipX(true);
+        }
 
-      // Draw bounding box in preview mode (when not playing animation)
-      if (!this.isPlaying && this.boundingBoxGraphics && this.animationContainer) {
-        const bounds = sprite.getBounds();
+        // Apply blend mode
+        const blendModes = [
+          Phaser.BlendModes.NORMAL,
+          Phaser.BlendModes.ADD,
+          Phaser.BlendModes.MULTIPLY,
+          Phaser.BlendModes.SCREEN,
+        ];
+        sprite.setBlendMode(blendModes[blendMode] || Phaser.BlendModes.NORMAL);
 
-        // Draw semi-transparent bounding box
-        this.boundingBoxGraphics.lineStyle(2, 0x6495ed, 0.6); // Blue border
-        this.boundingBoxGraphics.strokeRect(
-          bounds.x,
-          bounds.y,
-          bounds.width,
-          bounds.height
-        );
-
-        // Draw corner markers for better visibility
-        const cornerSize = 8;
-        this.boundingBoxGraphics.lineStyle(2, 0xffffff, 0.8); // White corners
-
-        // Top-left corner
-        this.boundingBoxGraphics.lineBetween(bounds.x, bounds.y, bounds.x + cornerSize, bounds.y);
-        this.boundingBoxGraphics.lineBetween(bounds.x, bounds.y, bounds.x, bounds.y + cornerSize);
-
-        // Top-right corner
-        this.boundingBoxGraphics.lineBetween(bounds.x + bounds.width, bounds.y, bounds.x + bounds.width - cornerSize, bounds.y);
-        this.boundingBoxGraphics.lineBetween(bounds.x + bounds.width, bounds.y, bounds.x + bounds.width, bounds.y + cornerSize);
-
-        // Bottom-left corner
-        this.boundingBoxGraphics.lineBetween(bounds.x, bounds.y + bounds.height, bounds.x + cornerSize, bounds.y + bounds.height);
-        this.boundingBoxGraphics.lineBetween(bounds.x, bounds.y + bounds.height, bounds.x, bounds.y + bounds.height - cornerSize);
-
-        // Bottom-right corner
-        this.boundingBoxGraphics.lineBetween(bounds.x + bounds.width, bounds.y + bounds.height, bounds.x + bounds.width - cornerSize, bounds.y + bounds.height);
-        this.boundingBoxGraphics.lineBetween(bounds.x + bounds.width, bounds.y + bounds.height, bounds.x + bounds.width, bounds.y + bounds.height - cornerSize);
+        // Add to container
+        this.animationContainer.add(sprite);
       }
     }
   }
 
-  /**
-   * Setup canvas click detection for cell editing
-   */
-  private setupClickDetection(): void {
-    console.log('[AnimationScene] Setting up click detection');
-
-    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      console.log('[Click] Canvas clicked at', pointer.worldX, pointer.worldY);
-
-      // Only handle clicks when a frame is active for editing
-      const activeFrameIndex = useAnimationStore.getState().activeFrameIndex;
-      console.log('[Click] Active frame index:', activeFrameIndex);
-
-      if (activeFrameIndex === null) {
-        console.log('[Click] No active frame, ignoring click');
-        return;
-      }
-
-      // Don't handle clicks during playback
-      if (this.isPlaying) {
-        console.log('[Click] Animation is playing, ignoring click');
-        return;
-      }
-
-      console.log('[Click] Checking for sprite hit...');
-
-      // Check if click hit any sprite in the animation container
-      if (this.animationContainer) {
-        const sprites = this.animationContainer.list as Phaser.GameObjects.Sprite[];
-        console.log('[Click] Found', sprites.length, 'sprites in container');
-
-        for (let i = 0; i < sprites.length; i++) {
-          const sprite = sprites[i];
-          if (!sprite) continue;
-
-          const bounds = sprite.getBounds();
-          console.log(`[Click] Sprite ${i} bounds:`, bounds);
-
-          // Check if pointer is within sprite bounds
-          if (bounds.contains(pointer.worldX, pointer.worldY)) {
-            console.log('[Click] Hit sprite', i);
-
-            // Get the cell data for this sprite
-            const frame = this.animation.frames[this.currentFrameIndex];
-            if (frame && i < frame.length) {
-              const cellData = frame[i] as RMMVCellData;
-
-              console.log('[Click] Opening edit dialog for cell', i, cellData);
-              // Open edit dialog
-              useAnimationStore.getState().openEditCellDialog(i, cellData);
-              return;
-            }
-          }
-        }
-      }
-
-      console.log('[Click] No sprite hit, opening add dialog');
-
-      // If we get here, no sprite was clicked - open add dialog
-      // Convert screen coordinates to animation container coordinates
-      const containerPos = this.animationContainer
-        ? { x: this.animationContainer.x, y: this.animationContainer.y }
-        : { x: 0, y: 0 };
-
-      const clickPosition = {
-        x: pointer.worldX - containerPos.x,
-        y: pointer.worldY - containerPos.y,
-      };
-
-      console.log('[Click] Opening add dialog at position', clickPosition);
-      useAnimationStore.getState().openAddCellDialog(clickPosition);
-    });
-  }
 
   /**
    * Cleanup when scene is shutdown
