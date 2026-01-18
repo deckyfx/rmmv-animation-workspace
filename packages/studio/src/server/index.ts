@@ -391,6 +391,55 @@ const server = serve({
       }
     },
 
+    // Example page: Test AnimationPlayerManager
+    '/example': async () => {
+      const file = Bun.file('./src/example/example.html');
+      if (await file.exists()) {
+        return new Response(file, {
+          headers: { 'Content-Type': 'text/html' },
+        });
+      }
+      return new Response('Example page not found', { status: 404 });
+    },
+
+    '/example.js': async () => {
+      // Build and bundle TypeScript with dependencies
+      try {
+        const result = await Bun.build({
+          entrypoints: ['./src/example/example.ts'],
+          target: 'browser',
+          format: 'esm',
+          minify: false,
+          sourcemap: 'none',
+          external: [], // Bundle all dependencies
+        });
+
+        if (result.outputs.length > 0) {
+          const output = result.outputs[0];
+          if (output) {
+            return new Response(await output.text(), {
+              headers: { 'Content-Type': 'application/javascript' },
+            });
+          }
+        }
+
+        return new Response('Build failed: no output', { status: 500 });
+      } catch (error) {
+        console.error('Build error:', error);
+        return new Response(`Build error: ${error}`, { status: 500 });
+      }
+    },
+
+    '/example/animationConfig.json': async () => {
+      const file = Bun.file('./src/example/animationConfig.json');
+      if (await file.exists()) {
+        return new Response(file, {
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      return new Response('Config not found', { status: 404 });
+    },
+
     // Serve animation assets (spritesheets, sound effects)
     '/assets/*': async (req) => {
       const url = new URL(req.url);

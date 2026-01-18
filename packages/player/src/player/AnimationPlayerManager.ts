@@ -107,6 +107,28 @@ export class AnimationPlayerManager {
   }
 
   /**
+   * Update scene reference
+   *
+   * Call this when transitioning between scenes to ensure animations
+   * play in the correct scene.
+   *
+   * @param scene - New Phaser scene instance
+   *
+   * @example
+   * ```typescript
+   * // In PreloadScene
+   * this.animationManager = new AnimationPlayerManager(this);
+   *
+   * // In MainScene.create()
+   * const manager = this.registry.get('animationManager');
+   * manager.setScene(this); // Update to MainScene
+   * ```
+   */
+  setScene(scene: Phaser.Scene): void {
+    this.scene = scene;
+  }
+
+  /**
    * Register single animation config
    *
    * Call this during initialization (before preload completes) to register
@@ -182,7 +204,7 @@ export class AnimationPlayerManager {
       for (const sheet of config.assets.spritesheets) {
         if (!spritesheets.has(sheet.name)) {
           spritesheets.set(sheet.name, {
-            key: sheet.name,
+            key: `anim_${sheet.name}`, // Add anim_ prefix to match AnimationPlayer expectation
             path: sheet.path,
             hue: sheet.hue,
           });
@@ -193,7 +215,7 @@ export class AnimationPlayerManager {
       for (const se of config.assets.soundEffects) {
         if (!soundEffects.has(se.name)) {
           soundEffects.set(se.name, {
-            key: se.name,
+            key: `se_${se.name}`, // Add se_ prefix to match AnimationPlayer expectation
             path: se.path,
           });
         }
@@ -249,8 +271,8 @@ export class AnimationPlayerManager {
       return null;
     }
 
-    // Create player for this animation
-    const player = new AnimationPlayer(this.scene, config);
+    // Create player for this animation (assets already preloaded by manager)
+    const player = new AnimationPlayer(this.scene, config, true);
 
     // Track active player
     if (!this.activePlayers.has(animationId)) {

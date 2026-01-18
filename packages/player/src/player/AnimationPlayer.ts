@@ -126,11 +126,13 @@ export class AnimationPlayer {
    *
    * @param scene - Phaser scene to render animation in
    * @param config - Animation configuration from export
+   * @param assetsPreloaded - Whether assets are already loaded in Phaser (default: false)
    */
-  constructor(scene: Phaser.Scene, config: AnimationConfig) {
+  constructor(scene: Phaser.Scene, config: AnimationConfig, assetsPreloaded = false) {
     this.scene = scene;
     this.config = config;
     this.animation = config.animation;
+    this.assetsLoaded = assetsPreloaded;
   }
 
   /**
