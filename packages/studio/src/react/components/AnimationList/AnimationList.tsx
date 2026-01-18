@@ -15,9 +15,26 @@ export function AnimationList() {
   );
   const selectAnimation = useAnimationStore((state) => state.selectAnimation);
   const createNewAnimation = useAnimationStore((state) => state.createNewAnimation);
+  const importAnimation = useAnimationStore((state) => state.importAnimation);
   const isSaving = useAnimationStore((state) => state.isSaving);
 
   const [searchQuery, setSearchQuery] = useState('');
+
+  const handleImport = async () => {
+    // Create file input element
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        await importAnimation(file);
+      }
+    };
+
+    input.click();
+  };
 
   // Filter out null entries and apply search filter
   const validAnimations = animations
@@ -51,6 +68,15 @@ export function AnimationList() {
         title="Create new blank animation"
       >
         <i className="fa-solid fa-plus"></i> New Animation
+      </button>
+
+      <button
+        className="animation-list-import-btn"
+        onClick={handleImport}
+        disabled={isSaving}
+        title="Import animation from JSON file"
+      >
+        <i className="fa-solid fa-file-import"></i> Import Animation
       </button>
 
       <div className="animation-list-search">

@@ -85,6 +85,11 @@ export function Frames({ animation }: FramesProps) {
     <div className="frames-toolbox">
       <h3 className="section-title">Frames</h3>
 
+      <button className="frames-add-btn" onClick={handleAddFrame}>
+        <i className="fa-solid fa-plus"></i>
+        ADD FRAME
+      </button>
+
       {/* Quick Operations */}
       <div className="frames-quick-ops">
         <button
@@ -166,11 +171,6 @@ export function Frames({ animation }: FramesProps) {
           );
         })}
       </div>
-
-      <button className="frames-add-btn" onClick={handleAddFrame}>
-        <i className="fa-solid fa-plus"></i>
-        ADD FRAME
-      </button>
     </div>
   );
 }

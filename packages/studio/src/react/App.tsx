@@ -10,8 +10,9 @@
 import { useEffect } from 'react';
 import { AnimationList } from './components/AnimationList/AnimationList';
 import { PhaserScene } from './components/PhaserScene/PhaserScene';
-import { PlaybackControls } from './components/PlaybackControls/PlaybackControls';
+import { FrameControls } from './components/FrameControls/FrameControls';
 import { Toolbox } from './components/Toolbox/Toolbox';
+import { FileActions } from './components/FileActions/FileActions';
 import { useAnimationStore } from './store/useAnimationStore';
 import './App.css';
 
@@ -83,6 +84,7 @@ export function App() {
       {/* Header */}
       <header className="app-header">
         <h1>RMMV Animation Studio</h1>
+        <FileActions />
         <div className="app-status">
           {isLoading && <span className="status-loading">Loading...</span>}
           {error && <span className="status-error">{error}</span>}
@@ -99,7 +101,7 @@ export function App() {
         {/* Middle Panel: Phaser Scene */}
         <main className="app-content">
           <PhaserScene />
-          <PlaybackControls />
+          <FrameControls />
         </main>
 
         {/* Right Panel: Toolbox */}

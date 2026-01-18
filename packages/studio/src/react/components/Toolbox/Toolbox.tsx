@@ -8,7 +8,6 @@
  */
 
 import { useAnimationStore } from '@react/store/useAnimationStore';
-import { File } from './File/File';
 import { GeneralSettings } from './GeneralSettings/GeneralSettings';
 import { Spritesheets } from './Spritesheets/Spritesheets';
 import { SEAndFlashTiming } from './SEAndFlashTiming/SEAndFlashTiming';
@@ -48,10 +47,6 @@ export function Toolbox() {
 
       <div className="toolbox-section">
         <Frames animation={selectedAnimation} />
-      </div>
-
-      <div className="toolbox-section">
-        <File />
       </div>
 
       {/* Cell Edit Dialog */}

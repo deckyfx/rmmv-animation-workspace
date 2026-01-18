@@ -1,0 +1,12 @@
+/**
+ * FrameControls Component Styles
+ *
+ * Container for PlaybackControls (left) and CellList (right)
+ */
+
+.frame-controls {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+  align-items: flex-start;
+}

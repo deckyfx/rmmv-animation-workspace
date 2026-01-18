@@ -9,9 +9,11 @@ import index from '../index.html';
 import { initDatabase } from '@db/client';
 import * as animationService from './services/animationService';
 import type { RMMVAnimation } from '@decky.fx/rmmv-animation-player/types';
-import { RMMV_CELL_SIZE } from '@decky.fx/rmmv-animation-player/types';
 
 const PORT = process.env.SERVER_PORT ? parseInt(process.env.SERVER_PORT) : 3000;
+
+/** Standard RMMV cell size (192×192 pixels) */
+const RMMV_CELL_SIZE = 192;
 
 // Initialize database on server start
 initDatabase();
@@ -19,6 +21,34 @@ initDatabase();
 const server = serve({
   port: PORT,
   hostname: '0.0.0.0',
+
+  async fetch(req) {
+    const url = new URL(req.url);
+
+    // Handle frame cells endpoint: /api/animations/:id/frames/:frameIndex/cells
+    const frameCellsMatch = url.pathname.match(/^\/api\/animations\/(\d+)\/frames\/(\d+)\/cells$/);
+    if (frameCellsMatch && req.method === 'GET') {
+      const animationId = parseInt(frameCellsMatch[1]!, 10);
+      const frameIndex = parseInt(frameCellsMatch[2]!, 10);
+
+      try {
+        const cells = await animationService.getFrameCellsWithSprites(animationId, frameIndex);
+        return Response.json({ cells });
+      } catch (error) {
+        console.error(`Error fetching cells for animation ${animationId}, frame ${frameIndex}:`, error);
+        return Response.json(
+          {
+            error: 'Failed to fetch frame cells',
+            details: error instanceof Error ? error.message : 'Unknown error'
+          },
+          { status: 500 }
+        );
+      }
+    }
+
+    // Fallthrough to routes
+    return undefined as any;
+  },
 
   routes: {
     // API: Get all animations (list view) or create new animation

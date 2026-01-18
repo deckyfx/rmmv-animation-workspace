@@ -1,0 +1,114 @@
+/**
+ * FileActions Component Styles
+ *
+ * Top ribbon file action buttons
+ */
+
+.file-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.file-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.file-action-btn:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.file-action-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.file-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.file-action-btn i {
+  font-size: 14px;
+}
+
+/* Button variants */
+.file-action-save:not(:disabled) {
+  background-color: rgba(76, 175, 80, 0.2);
+  border-color: rgba(76, 175, 80, 0.4);
+}
+
+.file-action-save:hover:not(:disabled) {
+  background-color: rgba(76, 175, 80, 0.3);
+  border-color: rgba(76, 175, 80, 0.6);
+}
+
+.file-action-export:not(:disabled) {
+  background-color: rgba(33, 150, 243, 0.2);
+  border-color: rgba(33, 150, 243, 0.4);
+}
+
+.file-action-export:hover:not(:disabled) {
+  background-color: rgba(33, 150, 243, 0.3);
+  border-color: rgba(33, 150, 243, 0.6);
+}
+
+.file-action-duplicate:not(:disabled) {
+  background-color: rgba(255, 152, 0, 0.2);
+  border-color: rgba(255, 152, 0, 0.4);
+}
+
+.file-action-duplicate:hover:not(:disabled) {
+  background-color: rgba(255, 152, 0, 0.3);
+  border-color: rgba(255, 152, 0, 0.6);
+}
+
+.file-action-delete:not(:disabled) {
+  background-color: rgba(244, 67, 54, 0.2);
+  border-color: rgba(244, 67, 54, 0.4);
+}
+
+.file-action-delete:hover:not(:disabled) {
+  background-color: rgba(244, 67, 54, 0.3);
+  border-color: rgba(244, 67, 54, 0.6);
+}
+
+/* Status indicator */
+.file-action-status {
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  font-size: 18px;
+}
+
+.status-dirty {
+  color: #ff9800;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.status-saved {
+  color: #4caf50;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}

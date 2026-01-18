@@ -1,5 +1,5 @@
 .frames-toolbox {
-  padding: 16px;
+  padding: 8px 12px;
 }
 
 /* Quick Operations Bar */
@@ -228,7 +228,8 @@
 /* Add Frame Button */
 .frames-add-btn {
   width: 100%;
-  padding: 12px;
+  padding: 10px;
+  margin-bottom: 8px;
   border: none;
   border-radius: 6px;
   background-color: #4caf50;

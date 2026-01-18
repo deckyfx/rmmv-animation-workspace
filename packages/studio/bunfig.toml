@@ -1,0 +1,4 @@
+# Bun configuration for module resolution
+[module]
+# Enable path alias resolution from tsconfig.json
+paths = true

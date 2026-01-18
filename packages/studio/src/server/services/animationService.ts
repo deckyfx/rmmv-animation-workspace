@@ -8,7 +8,46 @@
 import { eq, asc } from 'drizzle-orm';
 import { getDatabase } from '@db/client';
 import { animations, animationFrames, animationTimings } from '@db/schema';
-import type { RMMVAnimation, RMMVFrame, RMMVAnimationTiming } from '@decky.fx/rmmv-animation-player/types';
+import type { RMMVAnimation, RMMVFrame, RMMVAnimationTiming, RMMVCellData } from '@decky.fx/rmmv-animation-player/types';
+
+/**
+ * Standard RMMV cell size (192×192 pixels)
+ * Copied from player package to avoid importing Phaser on server side
+ */
+const RMMV_CELL_SIZE = 192;
+
+/**
+ * Cell coordinates in sprite sheet grid
+ */
+interface CellCoordinates {
+  row: number;
+  col: number;
+  x: number;
+  y: number;
+}
+
+/**
+ * Calculate cell coordinates from cellId using row-major indexing
+ * Copied from player package to avoid importing Phaser on server side
+ *
+ * Formula: cellId = (row * columns) + column
+ */
+function getCellCoordinates(
+  cellId: number,
+  columns: number,
+  cellWidth = RMMV_CELL_SIZE,
+  cellHeight = RMMV_CELL_SIZE
+): CellCoordinates {
+  const row = Math.floor(cellId / columns);
+  const col = cellId % columns;
+
+  return {
+    row,
+    col,
+    x: col * cellWidth,
+    y: row * cellHeight,
+  };
+}
 
 /**
  * Get all animations (metadata with frame count)
@@ -283,4 +322,142 @@ export async function duplicateAnimation(id: number): Promise<RMMVAnimation> {
 
   // Use createAnimation to insert the duplicate
   return await createAnimation(duplicateData);
+}
+
+/**
+ * Get sprite sheet dimensions and calculate column count
+ */
+async function getSpriteSheetColumns(sheetName: string): Promise<number> {
+  try {
+    const filePath = `../../assets/img/animations/${sheetName}.png`;
+    const imageFile = Bun.file(filePath);
+    const arrayBuffer = await imageFile.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    // Read PNG width from header (bytes 16-19, big-endian)
+    if (buffer[0] === 0x89 && buffer[1] === 0x50) { // PNG signature
+      const width = buffer.readUInt32BE(16);
+      return Math.floor(width / RMMV_CELL_SIZE);
+    }
+
+    // Default to 5 columns if can't read
+    return 5;
+  } catch (error) {
+    console.error(`Error reading sprite sheet ${sheetName}:`, error);
+    return 5; // Default fallback
+  }
+}
+
+/**
+ * Interface for enriched cell data with sprite positioning
+ */
+export interface CellWithSpriteData {
+  /** Cell index in frame */
+  cellIndex: number;
+  /** Raw cell data [cellId, x, y, scale, rotation, flip, opacity, blendMode] */
+  cellData: RMMVCellData;
+  /** Sprite positioning info (null for empty cells with cellId -1) */
+  sprite: {
+    /** Sprite sheet name (without .png) */
+    sheetName: string;
+    /** Full path to sprite sheet */
+    sheetPath: string;
+    /** Cell ID in sprite sheet (0-99 for sheet 1, 100-199 for sheet 2) */
+    cellId: number;
+    /** Normalized cell ID (0-based within sheet) */
+    normalizedCellId: number;
+    /** Grid row */
+    row: number;
+    /** Grid column */
+    col: number;
+    /** X pixel position for background-position */
+    x: number;
+    /** Y pixel position for background-position */
+    y: number;
+    /** Number of columns in this sprite sheet */
+    columns: number;
+  } | null;
+}
+
+/**
+ * Get frame cells with calculated sprite positions
+ * Returns cell data enriched with sprite sheet info and CSS positioning
+ *
+ * @param animationId - Animation ID
+ * @param frameIndex - Frame index (0-based)
+ * @returns Array of cells with sprite positioning data
+ */
+export async function getFrameCellsWithSprites(
+  animationId: number,
+  frameIndex: number
+): Promise<CellWithSpriteData[]> {
+  // Get animation
+  const animation = await getAnimationById(animationId);
+  if (!animation) {
+    throw new Error(`Animation ${animationId} not found`);
+  }
+
+  // Validate frame index
+  if (frameIndex < 0 || frameIndex >= animation.frames.length) {
+    throw new Error(`Frame index ${frameIndex} out of bounds`);
+  }
+
+  const frame = animation.frames[frameIndex];
+  if (!frame) {
+    throw new Error(`Frame ${frameIndex} is null or undefined`);
+  }
+
+  // Get sprite sheet column counts
+  const sheet1Columns = animation.animation1Name
+    ? await getSpriteSheetColumns(animation.animation1Name)
+    : 5;
+  const sheet2Columns = animation.animation2Name
+    ? await getSpriteSheetColumns(animation.animation2Name)
+    : 5;
+
+  // Maximum cellId for sheet 1 (0-99 by default)
+  const sheet1MaxCells = 100;
+
+  // Process each cell
+  const cellsWithSprites: CellWithSpriteData[] = frame.map((cellData, cellIndex) => {
+    const cellId = cellData[0];
+
+    // Handle empty cells (cellId -1)
+    if (cellId < 0) {
+      return {
+        cellIndex,
+        cellData,
+        sprite: null,
+      };
+    }
+
+    // Determine which sprite sheet to use
+    const useSheet2 = cellId >= sheet1MaxCells && animation.animation2Name;
+    const sheetName = useSheet2 ? animation.animation2Name : animation.animation1Name;
+    const columns = useSheet2 ? sheet2Columns : sheet1Columns;
+    const normalizedCellId = useSheet2 ? cellId - sheet1MaxCells : cellId;
+
+    // Calculate grid position
+    const coords = getCellCoordinates(normalizedCellId, columns);
+
+    return {
+      cellIndex,
+      cellData,
+      sprite: sheetName
+        ? {
+            sheetName,
+            sheetPath: `/assets/img/animations/${sheetName}.png`,
+            cellId,
+            normalizedCellId,
+            row: coords.row,
+            col: coords.col,
+            x: coords.x,
+            y: coords.y,
+            columns,
+          }
+        : null,
+    };
+  });
+
+  return cellsWithSprites;
 }

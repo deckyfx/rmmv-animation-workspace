@@ -1,9 +1,9 @@
 .general-settings {
-  padding: 16px;
+  padding: 8px 12px;
 }
 
 .section-title {
-  margin: 0 0 16px 0;
+  margin: 0 0 8px 0;
   font-size: 14px;
   font-weight: 600;
   text-transform: uppercase;
