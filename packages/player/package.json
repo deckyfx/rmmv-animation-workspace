@@ -36,6 +36,9 @@
   ],
   "author": "decky.fx",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "peerDependencies": {
     "phaser": "^3.60.0"
   },
