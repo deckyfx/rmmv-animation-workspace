@@ -1,5 +1,10 @@
 # @decky.fx/rmmv-animation-player
 
+[![npm version](https://img.shields.io/npm/v/@decky.fx/rmmv-animation-player.svg)](https://www.npmjs.com/package/@decky.fx/rmmv-animation-player)
+[![npm downloads](https://img.shields.io/npm/dm/@decky.fx/rmmv-animation-player.svg)](https://www.npmjs.com/package/@decky.fx/rmmv-animation-player)
+[![license](https://img.shields.io/npm/l/@decky.fx/rmmv-animation-player.svg)](https://github.com/decky-fx/rmmv-animation-studio/blob/main/LICENSE)
+[![bundle size](https://img.shields.io/bundlephobia/minzip/@decky.fx/rmmv-animation-player)](https://bundlephobia.com/package/@decky.fx/rmmv-animation-player)
+
 Standalone animation player for RPG Maker MV animations in Phaser 3 projects.
 
 ## Overview
